@@ -5,8 +5,8 @@
 set -euo pipefail
 
 # Define source and staging directories
-SOURCE_DIR="/home/sand/projects/agents-markdown-formatter"
-STAGE_DIR="/tmp/markdown-formatter-staged"
+SOURCE_DIR="${PWD}"
+STAGE_DIR="${SOURCE_DIR}/test/staged-artifact"
 
 # Define the exact runtime allowlist (what should be copied)
 RUNTIME_ALLOWLIST=(
@@ -109,9 +109,9 @@ echo "✓ No dev-only paths found in staged output"
 
 # Test the staged skill works from /tmp
 echo ""
-echo "Testing staged skill from /tmp:"
-echo "==============================="
-cd "$STAGE_DIR"
+echo "Testing staged skill from ${STAGE_DIR}:"
+echo "======================================"
+cd "${STAGE_DIR}"
 
 # Make the index.js executable
 chmod +x skills/markdown-formatter/src/index.js
