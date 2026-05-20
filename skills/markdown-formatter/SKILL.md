@@ -44,7 +44,7 @@ node skills/markdown-formatter/src/index.js [options] <path>
 
 ## Prerequisites
 
-- `node` (v14+)
+- `node` (>=20)
 - `oxfmt` (either in project's `node_modules/.bin/` or available in PATH)
 
 The formatter first attempts to use a locally installed `oxfmt` (from `node_modules/.bin/`), then falls back to a globally available `oxfmt` in PATH. If neither is found, the tool will exit with an error.

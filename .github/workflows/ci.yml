@@ -2,36 +2,55 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  ci:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [20]
+    timeout-minutes: 10
 
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: "20"
+        cache: "npm"
 
-    - name: Checkout code
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Download oxfmt binary (Phase A - auto-download for CI)
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run anti-drift checks
+      run: node scripts/check-consistency.js
+
+    - name: Download oxfmt binary
       run: |
-        curl -L https://github.com/oxc-project/oxc/releases/latest/download/oxfmt-x86_64-unknown-linux-musl.tar.gz | tar xz
+        OXFMT_VERSION=$(node -e "const p=require('./package.json'); console.log(p.devDependencies.oxfmt.replace(/^\\^/,''))")
+        curl -sL "https://github.com/oxc-project/oxc/releases/download/apps_v${OXFMT_VERSION}/oxfmt-x86_64-unknown-linux-musl.tar.gz" | tar xz
         chmod +x oxfmt
         echo "$PWD" >> $GITHUB_PATH
-    
-    - name: Verify oxfmt is available
-      run: oxfmt --version
-    
+
+    - name: Verify oxfmt version
+      run: |
+        ./oxfmt --version
+        EXPECTED=$(node -e "const p=require('./package.json'); console.log(p.devDependencies.oxfmt.replace(/^\\^/,''))")
+        ACTUAL=$(./oxfmt --version | awk '{print $2}')
+        if [ "$ACTUAL" != "$EXPECTED" ]; then
+          echo "ERROR: oxfmt version mismatch (expected $EXPECTED, got $ACTUAL)"
+          exit 1
+        fi
+
     - name: Run structural guard tests
       run: npm test
 
@@ -43,10 +62,9 @@ jobs:
 
     - name: Test idempotence
       run: |
-        set -e
         mkdir -p /tmp/idempotence
-        find test/fixtures/current/ test/fixtures/oxfmt-spike/ -name "*.md" -o -name "*.mdx" | xargs -I{} cp {} /tmp/idempotence/
+        find test/fixtures/current/ test/fixtures/oxfmt-spike/ \( -name "*.md" -o -name "*.mdx" \) -exec cp {} /tmp/idempotence/ \;
         node skills/markdown-formatter/src/index.js --all /tmp/idempotence/
         cp -r /tmp/idempotence /tmp/idempotence_copy
         node skills/markdown-formatter/src/index.js --all /tmp/idempotence/
-        diff -rq /tmp/idempotence /tmp/idempotence_copy && echo "Idempotence: PASS" || (echo "Idempotence: FAIL — files changed on second pass" && exit 1)
+        diff -rq /tmp/idempotence /tmp/idempotence_copy && echo "Idempotence: PASS" || (echo "Idempotence: FAIL" && exit 1)
