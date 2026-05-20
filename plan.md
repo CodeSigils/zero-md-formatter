@@ -209,12 +209,14 @@ Implement in a new repository at `/home/sand/projects/agents-markdown-formatter`
 ### Phase 2: Spike / Evaluation
 
 - [ ] Treat the spike repo (<https://github.com/CodeSigils/markdown-oxc-spike>) as prior art; do not repeat fixture work unless this repo needs Hermes-specific coverage.
+- [ ] Consult **both** the remote spike repo and local `references/prior-art/markdown-oxc-spike/findings.md` for Oxfmt behavior, fixtures, and guard requirements.
 - [ ] Verify current official Oxfmt docs still list Markdown and MDX support before changing formatter behavior.
 - [ ] Test oxfmt on `test/kitchensink.md` and `test/hermes-intro.md` — compare output against structural invariants, not old markdownlint formatting expectations.
 - [ ] Do NOT assume `.oxfmtrc.json` covers all current `.markdownlint.json` rules; document markdownlint-style policy gaps explicitly.
 - [ ] Check oxfmt idempotence: run twice, verify convergence.
 - [ ] Decide whether `embeddedLanguageFormatting` should be `"auto"` or `"off"` for the first safe Hermes release.
 - [ ] Decide: keep `format-tables.js` as fallback for validate-only mode?
+- [ ] **Test framework**: use Node's built-in test runner (`node --test`) for all unit and integration tests. Do not introduce vitest, jest, or other test frameworks.
 
 ### Phase 3: Structural Guard Safety Net
 
@@ -224,6 +226,9 @@ Implement in a new repository at `/home/sand/projects/agents-markdown-formatter`
   - Post-verify: compare after formatting, report drift, and fail on policy violations
 - [ ] Add explicit fixtures from the spike/Oxc edge cases: nested fences in lists, tilde-to-backtick normalization, tagged fence content formatting, escaped table pipes, and Markdown-in-JS with escaped backticks/multibyte text.
 - [ ] Add `--guard` flag to the CLI and test it against fixtures before full formatter integration.
+  - **Target path**: port `check-structure.js` to `skills/markdown-formatter/scripts/check-structure.js`
+  - **Test framework**: use Node's built-in test runner (`node --test`)
+  - Port to `skills/markdown-formatter/scripts/check-structure.js`
 
 ### Phase 4: oxfmt Integration
 
@@ -254,7 +259,7 @@ Implement in a new repository at `/home/sand/projects/agents-markdown-formatter`
 
 ### Phase 5: Anti-Drift & Consistency (Critical)
 
-- [ ] Update `check-consistency.js` to validate oxfmt config and docs:
+- [ ] Create `scripts/check-consistency.js` (repository-only, not shipped) to validate oxfmt config and docs:
   - `.oxfmtrc.json` matches documented rules in `AGENTS.md` and `references/rules.md`
   - README badge version matches SKILL.md frontmatter version
   - No stale shipped references to markdownlint-cli2, `npx markdownlint`, `markdown-lint` identity, or old primary formatter paths
@@ -282,7 +287,7 @@ Implement in a new repository at `/home/sand/projects/agents-markdown-formatter`
 - [ ] Update `references/rules.md`:
   - Replace markdownlint rules with oxfmt formatting rules
   - Document oxfmt limitations and edge cases
-- [ ] Update CI workflow (`.github/workflows/ci.yml`):
+- [ ] Create CI workflow at `.github/workflows/ci.yml` (if not exists) or update existing:
   - Replace `node lint.js --check .` with `node lint.js --guard --all .`
   - Keep consistency check, fence validation, table validation
   - Add structural guard step
@@ -297,15 +302,74 @@ Implement in a new repository at `/home/sand/projects/agents-markdown-formatter`
 - [ ] Update `.gitignore` only for generated local state; do not use ignore rules as a substitute for an explicit release allowlist.
 - [ ] Create migration guide for existing users.
 
+### Test Folder Structure
+
+Define the test directory structure before implementing Phase 8 tests:
+
+```
+test/
+├── fixtures/
+│   ├── current/           # Real-world docs that should format cleanly
+│   │   ├── kitchensink.md
+│   │   └── hermes-intro.md
+│   ├── oxfmt-spike/      # Oxfmt edge cases (copied from spike)
+│   │   ├── fence-blank.md
+│   │   ├── fence-nested.md
+│   │   ├── fence-language-tags.md
+│   │   ├── table-escaped-pipes.md
+│   │   ├── table-semantic-alignment.md
+│   │   ├── html-comment-after-list.md
+│   │   ├── markdown-in-js-template.md
+│   │   └── task-lists.md
+│   ├── violations/        # Structural violation fixtures (guard should catch)
+│   │   ├── fence-mismatch.md       # Unclosed/mismatched-length fences
+│   │   ├── table-column-drift.md   # Header/delimiter/row column mismatch
+│   │   └── fence-untitled.md       # Empty language tag on opener
+│   └── idempotence/       # Files that must not change on second pass
+│       └── (uses fixtures from oxfmt-spike/)
+├── unit/                  # Unit tests for isolated components
+│   ├── check-structure.test.js     # Structural guard logic
+│   ├── check-fences.test.js       # Fence validation logic
+│   └── formatter.test.js          # Formatter wrapper logic
+├── integration/           # CLI integration tests
+│   ├── cli.test.js                # CLI flags and exit codes
+│   └── guard.test.js              # Guard pipeline end-to-end
+├── staged-artifact/       # Install verification
+│   └── verify-install.sh          # Staged payload audit script
+└── check-all.js           # Master test runner
+```
+
+| Directory           | Purpose                                                       |
+| :----------------- | :------------------------------------------------------------ |
+| `fixtures/current`    | Real-world docs, should format without errors                    |
+| `fixtures/oxfmt-spike`| Edge cases: idempotence, fence behavior, table alignment          |
+| `fixtures/violations` | Malformed inputs the guard must detect (not fix)                  |
+| `fixtures/idempotence`| Files that converge on second formatter pass                      |
+| `unit/`               | Pure function tests: structural guard, fences, formatter          |
+| `integration/`         | End-to-end: CLI flags, guard pipeline, pre/post snapshot          |
+| `staged-artifact/`     | Release gate: verify shipped files match allowlist               |
+| `check-all.js`         | Run all tests in sequence: unit → integration → staged artifact   |
+
 ### Phase 8: Testing
 
-- [ ] Run all existing tests: `node test/format-tables.test.js`
-- [ ] Add structural guard tests
-- [ ] Test oxfmt idempotence on all fixtures
-- [ ] Verify `format-tables.js` and oxfmt produce same table output
-- [ ] Test all CLI flags (--check, --all, --fences, --validate, --dry-run, --guard)
-- [ ] Run staged install artifact verification from Phase 7; tests must execute against the staged skill, not only the repository checkout
-- [ ] Run `check-consistency.js` — must pass after all changes
+- [ ] Create violation fixtures in `test/fixtures/violations/`
+  - `fence-mismatch.md` — unclosed/mismatched fences (guard should reject)
+  - `table-column-drift.md` — header/delimiter/row column mismatch (guard should reject)
+  - `fence-untitled.md` — empty language tag (guard should warn)
+- [ ] Create unit tests in `test/unit/`
+  - `check-structure.test.js` — structural guard logic
+  - `check-fences.test.js` — fence validation logic
+  - `formatter.test.js` — formatter wrapper logic
+- [ ] Create integration tests in `test/integration/`
+  - `cli.test.js` — CLI flags and exit codes
+  - `guard.test.js` — pre/post snapshot pipeline
+- [ ] Create `test/staged-artifact/verify-install.sh` — staged payload audit
+- [ ] Create `test/check-all.js` — master test runner
+- [ ] Run unit tests: `node --test test/unit/*.test.js` (Node built-in runner)
+- [ ] Run integration tests: `node --test test/integration/*.test.js` (Node built-in runner)
+- [ ] Run staged artifact verification
+- [ ] Run `node scripts/check-consistency.js` (at root `scripts/`, dev-only) — must pass
+- [ ] Run master test runner: `node test/check-all.js` (runs all layers in sequence)
 
 ### Phase 9: Final Agent Guard Policy Review
 
@@ -361,7 +425,7 @@ Before release, stage that allowlist into a temporary directory and review the f
 - `README.md` — repository docs; if the installer can ship docs separately, keep them outside the runtime skill payload
 - `test/` and fixtures — development validation only
 - `.github/`, CI configs, coverage, and temporary reports — repository automation only
-- `scripts/check-consistency.js` — release/development consistency check, not runtime formatter behavior
+- `scripts/check-consistency.js` (root `scripts/`, dev-only) — release/development consistency check, not runtime formatter behavior
 - `package.json`, lockfiles, and `node_modules/` — allowed only for local development if introduced; never required by the installed skill
 - `.omo/`, `.open-mem/`, session logs, caches, and other generated agent/tool state — never shipped
 
@@ -477,7 +541,7 @@ After EVERY implementation phase, run:
 
 ## Success Criteria
 
-1. [ ] Formatter CLI tests pass (`node --test ...` or repository equivalent)
+1. [ ] Formatter CLI tests pass (`node --test test/unit/*.test.js test/integration/*.test.js`)
 2. [ ] Legacy table validation tests still pass if table validation remains
 3. [ ] `node skills/markdown-formatter/src/index.js --check test/kitchensink.md` — exits 0
 4. [ ] `node skills/markdown-formatter/src/index.js --check test/hermes-intro.md` — exits 0
@@ -518,7 +582,7 @@ After EVERY implementation phase, run:
 ## Final Verification Wave
 
 - [ ] **F1 — Consistency Check**: `node scripts/check-consistency.js` exits 0
-- [ ] **F2 — All Tests Pass**: `node test/format-tables.test.js` — all tests pass
+- [ ] **F2 — All Tests Pass**: `node --test test/unit/*.test.js test/integration/*.test.js` — all tests pass
 - [ ] **F3 — Pipeline Check**: formatter CLI `--check` exits 0 on all fixtures
 - [ ] **F4 — Install Artifact Audit**: Staged install payload contains only allowlisted runtime files and excludes planning, tests, dev dependencies, generated local state, and repository-only governance files
 - [ ] **F5 — Anti-Drift Audit**: No stale references to markdownlint-cli2, npx, format-tables (as primary formatter), or markdown-lint (as primary identity) in shipped files
