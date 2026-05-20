@@ -191,6 +191,8 @@ Implement in a new repository at `/home/sand/projects/agents-markdown-formatter`
 - Do not start by deleting the old `markdown-lint` payload in this repo. In the new repo, avoid introducing it as active runtime code at all; copy old files only as explicit prior-art references when useful.
 - Build the structural guard before full Oxfmt integration so formatter output is evaluated against safety invariants from the start.
 - Keep cached binary download out of the first implementation pass. The first shippable pass resolves `oxfmt` from local development installs or PATH and fails with actionable setup instructions.
+- Use a dev-only root `package.json` for reproducible repository tests and a pinned `oxfmt` devDependency, but never require npm dependencies in the installed Hermes skill payload.
+- Do not use `npx` in the product wrapper, validation path, shipped docs, or agent instructions. `npx` may appear only as historical prior art or an explicit one-off setup/debug note.
 - Make one concern per commit: boundary/packaging, guard, formatter integration, docs/consistency, final policy review.
 
 ### Phase 1: Rename, Migration Boundary, and Install Payload Boundary
@@ -201,6 +203,7 @@ Implement in a new repository at `/home/sand/projects/agents-markdown-formatter`
 - [ ] Keep a root `lint.js` compatibility wrapper only if needed for current CI/migration.
 - [ ] Add or document the new canonical command: `node skills/markdown-formatter/src/index.js <path>` or `mdformat <path>`.
 - [ ] Add a first-pass install allowlist or staging script/check before moving behavior, so implementation can verify the installed payload independently from the repository checkout.
+- [ ] Add a dev/runtime dependency boundary note before adding tooling: root `package.json` is repository-only; `skills/markdown-formatter/` must run from the staged payload without `package.json`, lockfiles, `node_modules/`, or `npm install`.
 - [ ] Decide whether the old `skills/markdown-lint/` path remains as a thin compatibility shim or is removed in one breaking change; do not remove it until the new path and compatibility decision are tested.
 
 ### Phase 2: Spike / Evaluation
@@ -238,11 +241,13 @@ Implement in a new repository at `/home/sand/projects/agents-markdown-formatter`
   ```
 
 - [ ] Add `skills/markdown-formatter/src/index.js` to call oxfmt instead of `format-tables.js` + `npx markdownlint-cli2`.
+- [ ] Add root `package.json` as development-only tooling with pinned `oxfmt` and scripts for tests/checks; keep it outside the release allowlist.
 - [ ] Implement staged oxfmt binary resolution for the first shippable pass:
   1. Check local `node_modules/.bin/oxfmt` when a development install exists
   2. Check system PATH
   3. Fail with actionable install/setup instructions
   4. Defer cached download support until the CLI, guard, install artifact, and tests are proven stable
+- [ ] Ensure the wrapper never shells out to `npx` and never falls back to `markdownlint`, Prettier, mdformat, editor formatters, or any external Markdown linter/formatter.
 - [ ] Keep `validate` and `fences` subcommands working
 - [ ] Ensure formatter flags work: `--check`, `--fix` default, `--all`, `--guard`, `--verify`, `--fences`, `--validate`, `--dry-run`.
 - [ ] Run oxfmt twice or otherwise verify idempotence before reporting success.
@@ -287,7 +292,7 @@ Implement in a new repository at `/home/sand/projects/agents-markdown-formatter`
 - [ ] Define a release allowlist for the installed skill payload. Ship only runtime files under `skills/markdown-formatter/` that are needed by Hermes at use time: `SKILL.md`, formatter CLI source, guard scripts, hook script, runtime references, and Oxfmt config.
 - [ ] Keep repository-only planning, tests, fixtures, and development utilities out of the installed user payload: `plan.md`, `AGENTS.md`, `README.md`, `test/`, CI files, dev-only `scripts/`, `package.json`, lockfiles, `node_modules/`, coverage, and generated local state.
 - [ ] Add a packaging/install verification task that builds or stages the exact install artifact into a temp directory and lists the files that would be shipped before release.
-- [ ] Document the zero-dependency runtime contract: pure Node.js wrappers plus an externally resolved `oxfmt` binary; no bundled test dependencies, planning files, npm dev dependencies, or generated agent state in the installed skill.
+- [ ] Document the zero-dependency runtime contract: pure Node.js wrappers plus an externally resolved `oxfmt` binary; no bundled test dependencies, planning files, npm dev dependencies, lockfiles, `package.json`, or generated agent state in the installed skill.
 - [ ] Document the developer-only dependency boundary separately so maintainers may use local test tooling without accidentally promoting those dependencies into the skill payload.
 - [ ] Update `.gitignore` only for generated local state; do not use ignore rules as a substitute for an explicit release allowlist.
 - [ ] Create migration guide for existing users.
@@ -372,9 +377,25 @@ Add a release check that stages the exact install payload and verifies it before
 6. Run `--fences`, `--validate`, `--guard`, and `--check` against representative fixtures copied outside the staged skill payload.
 7. Verify the staged skill still works with no repository root, no test directory, and no npm install.
 
-### Zero-Dependency Approach
+### Dependency and Binary Strategy
 
-Use a staged zero-npm-dependency approach. Do not make auto-download part of the first implementation milestone.
+Use a staged zero-npm-dependency runtime approach with repository-only development tooling. Do not make auto-download part of the first implementation milestone.
+
+Decision:
+
+- Add a root `package.json` for development and CI only.
+- Pin `oxfmt` as a devDependency so repository tests are reproducible.
+- Exclude `package.json`, lockfiles, `node_modules/`, tests, fixtures, plans, and repository governance from the staged Hermes skill payload.
+- Ship a pure Node.js wrapper and guard scripts that resolve an existing `oxfmt` binary.
+- Do not use `npx` in the wrapper, validation path, shipped docs, or agent instructions.
+- Do not substitute unrelated Markdown linters or formatters when Oxfmt is unavailable.
+
+Why this is the best path:
+
+- Reproducible development needs a pinned tool version.
+- Hermes runtime needs a small, dependency-free skill payload.
+- `npx` reintroduces network/runtime drift and repeats the old `markdownlint-cli2` failure mode.
+- Binary auto-download is useful later, but it adds platform, checksum, extraction, proxy, and update-policy risk before the guard behavior is proven.
 
 Phase A resolution:
 
@@ -388,13 +409,15 @@ Phase B, only after CLI/guard/tests pass:
 2. Download via HTTPS with redirects, platform mapping, temp-file extraction, and no shell interpolation.
 3. Add checksum/signature verification if Oxfmt publishes suitable artifacts.
 
-**No npm package dependencies in the shipped skill payload.** A development `package.json` may exist outside the shipped skill only if it is clearly marked dev-only.
+**No npm package dependencies in the shipped skill payload.** A development `package.json` should exist at the repository root for tests and pinned Oxfmt, but it must be clearly marked dev-only and excluded from staged install artifacts.
 
 ### Minimum Dependencies Policy
 
-- **Zero npm dependencies** — the skill must remain pure Node.js
+- **Zero npm runtime dependencies** — the shipped skill must remain pure Node.js
+- Root `package.json` is allowed for development/CI only and should pin `oxfmt`
 - `oxfmt` binary is resolved locally or from PATH first; dynamic fetch is a later hardening phase, not the first implementation
-- No `npx` calls (replacing current markdownlint-cli2 approach)
+- No `npx` calls in product wrapper, validation path, shipped docs, or agent instructions
+- No fallback to `markdownlint`, Prettier, mdformat, editor auto-formatters, or external Markdown wrappers
 - Keep pure Node.js scripts for supporting validations (fences, structure)
 
 ---
@@ -443,6 +466,8 @@ After EVERY implementation phase, run:
 | oxfmt has gaps vs markdownlint rules                  | Official docs list Markdown/MDX support, but markdownlint-specific policy rules may not be covered — document gaps explicitly |
 | Structural drift from oxfmt                           | Pre/post structural guard catches fence/table drift and optional fenced-code content drift                                    |
 | Embedded formatting changes code fences unexpectedly  | Make `embeddedLanguageFormatting` an explicit config/product decision; default to `"off"` for conservative first release      |
+| Dev dependencies leak into shipped skill              | Root `package.json` is dev-only; staged install allowlist fails if package files, lockfiles, or `node_modules/` are shipped   |
+| `npx` reintroduces runtime drift                      | Product wrapper never calls `npx`; it resolves local dev binary, then PATH, then fails with setup instructions                |
 | Hermes hook system incompatibility                    | `post-write.js` is a shell hook, not affected by formatter change                                                             |
 | Users with existing `markdown-lint` installs          | Provide migration note and optional compatibility wrapper                                                                     |
 | Users with existing `.markdownlint.json` configs      | Formatter ignores it; docs explain `.oxfmtrc.json` replacement                                                                |
@@ -462,27 +487,29 @@ After EVERY implementation phase, run:
 8. [ ] oxfmt idempotent: running formatter twice on same file produces same output
 9. [ ] Staged install artifact contains only allowlisted runtime files and excludes planning, tests, dev dependencies, generated local state, and repository-only governance files
 10. [ ] Staged install artifact works without the repository root, test directory, `node_modules/`, or npm install
-11. [ ] No stale references to `markdownlint-cli2` or `npx markdownlint` in any shipped file
-12. [ ] No stale `markdown-lint` identity remains except explicit migration/compatibility text
-13. [ ] Final agent guard policy review completed across AGENTS.md, SKILL.md, references/rules.md, README agent sections, hook examples, CI docs, and migration notes
-14. [ ] Version badge in README matches SKILL.md version
-15. [ ] All CLI flags documented in README and AGENTS.md
-16. [ ] Structural guard detects fence style changes (tilde→backtick) in test fixture
-17. [ ] Structural guard detects table column count changes in test fixture
-18. [ ] Structural guard detects or intentionally permits tagged fenced-code content changes according to the documented `embeddedLanguageFormatting` policy
-19. [ ] Plan/docs cite <https://github.com/CodeSigils/markdown-oxc-spike> as the current Markdown/Oxfmt evidence base
+11. [ ] Shipped skill works without root `package.json`, lockfiles, or any package manager install
+12. [ ] No stale references to `markdownlint-cli2` or `npx markdownlint` in any shipped file
+13. [ ] No active `npx oxfmt` product path in shipped docs or agent instructions
+14. [ ] No stale `markdown-lint` identity remains except explicit migration/compatibility text
+15. [ ] Final agent guard policy review completed across AGENTS.md, SKILL.md, references/rules.md, README agent sections, hook examples, CI docs, and migration notes
+16. [ ] Version badge in README matches SKILL.md version
+17. [ ] All CLI flags documented in README and AGENTS.md
+18. [ ] Structural guard detects fence style changes (tilde→backtick) in test fixture
+19. [ ] Structural guard detects table column count changes in test fixture
+20. [ ] Structural guard detects or intentionally permits tagged fenced-code content changes according to the documented `embeddedLanguageFormatting` policy
+21. [ ] Plan/docs cite <https://github.com/CodeSigils/markdown-oxc-spike> as the current Markdown/Oxfmt evidence base
 
 ---
 
 ## TODOs
 
-- [ ] **Phase 1**: Rename skill identity and define migration boundary
+- [ ] **Phase 1**: Rename skill identity, define migration boundary, and record the dev-only `package.json` versus zero-dependency runtime decision
 - [ ] **Phase 2**: Reuse spike findings and evaluate Hermes-specific oxfmt coverage against current pipeline
 - [ ] **Phase 3**: Port and test structural guard before full formatter rewrites
-- [ ] **Phase 4**: Integrate oxfmt into formatter CLI with local/PATH binary resolution only
+- [ ] **Phase 4**: Add dev-only root `package.json`, pin `oxfmt`, and integrate oxfmt into formatter CLI with local/PATH binary resolution only
 - [ ] **Phase 5**: Update consistency checker for formatter identity and oxfmt
 - [ ] **Phase 6**: Update all docs (SKILL.md, AGENTS.md, README.md, rules.md)
-- [ ] **Phase 7**: Define release allowlist, minimum-dependency shipping strategy, and install artifact verification
+- [ ] **Phase 7**: Define release allowlist, zero-runtime-dependency shipping strategy, dev-tool exclusion checks, and install artifact verification
 - [ ] **Phase 8**: Run all tests and verify staged install artifact behavior
 - [ ] **Phase 9**: Review final agent guard policies for stale instructions before release
 
