@@ -23,15 +23,12 @@ jobs:
     - name: Verify oxfmt is available
       run: oxfmt --version
     
-    - name: Run structural guard tests on violations
-      run: |
-        node skills/markdown-formatter/src/index.js --verify test/fixtures/violations/
-        node skills/markdown-formatter/src/index.js --fences test/fixtures/violations/
-        node skills/markdown-formatter/src/index.js --validate test/fixtures/violations/
-    
-    - name: Run formatter check on fixtures
-      run: node skills/markdown-formatter/src/index.js --check test/fixtures/
-    
+    - name: Run structural guard tests
+      run: npm test
+
+    - name: Run formatter check
+      run: npm run format:check -- test/fixtures/
+
     - name: Run formatter check on MDX fixture
       run: node skills/markdown-formatter/src/index.js --check test/fixtures/current/sample.mdx
 

@@ -92,7 +92,7 @@ format-tables.js (custom Node.js) → markdownlint-cli2 (via npx) → Success/Er
 
 ### Current Architecture Features
 
-- **Zero npm dependencies** — no `package.json`, no `node_modules/`, no install step
+- **Zero runtime dependencies** — no `package.json` in shipped skill; dev-only `package.json` at repo root only; no `node_modules/` in staged payload
 - **Hermes-specific metadata** in SKILL.md frontmatter (`version`, `author`, `metadata.hermes`)
 - **Post-write hook** (`post-write.js`) — optional Hermes hook system integration
 - **Consistency checker** — validates rules/config/docs stay in sync across 4 files
@@ -255,30 +255,14 @@ Implement in a new repository at `/home/sand/projects/agents-markdown-formatter`
 
 ### Phase 4: oxfmt Integration
 
-- [ ] Add `.oxfmtrc.json` with Hermes-appropriate defaults:
-
-  ```json
-  {
-    "tabWidth": 2,
-    "printWidth": 100,
-    "endOfLine": "lf",
-    "insertFinalNewline": true,
-    "proseWrap": "preserve",
-    "embeddedLanguageFormatting": "off"
-  }
-  ```
-
-- [ ] Add `skills/markdown-formatter/src/index.js` to call oxfmt instead of `format-tables.js` + `npx markdownlint-cli2`.
-- [ ] Add root `package.json` as development-only tooling with pinned `oxfmt` and scripts for tests/checks; keep it outside the release allowlist.
-- [ ] Implement staged oxfmt binary resolution for the first shippable pass:
-  1. Check local `node_modules/.bin/oxfmt` when a development install exists
-  2. Check system PATH
-  3. Fail with actionable install/setup instructions
-  4. Defer cached download support until the CLI, guard, install artifact, and tests are proven stable
-- [ ] Ensure the wrapper never shells out to `npx` and never falls back to `markdownlint`, Prettier, mdformat, editor formatters, or any external Markdown linter/formatter.
-- [ ] Keep `validate` and `fences` subcommands working
-- [ ] Ensure formatter flags work: `--check`, `--fix` default, `--all`, `--guard`, `--verify`, `--fences`, `--validate`, `--dry-run`.
-- [ ] Run oxfmt twice or otherwise verify idempotence before reporting success.
+- [x] Add `.oxfmtrc.json` with Hermes-appropriate defaults (tabWidth=2, printWidth=100, endOfLine=lf, proseWrap=preserve, embeddedLanguageFormatting=off)
+- [x] Add `skills/markdown-formatter/src/index.js` to call oxfmt instead of `format-tables.js` + `npx markdownlint-cli2`
+- [x] ~~Add root `package.json` as development-only tooling with pinned `oxfmt` and scripts for tests/checks; keep it outside the release allowlist.~~ Created at repo root: scripts test/format/format:check/verify/guard; oxfmt as devDependency.
+- [x] Implement staged oxfmt binary resolution: local node_modules/.bin/oxfmt → PATH → fail with install instructions
+- [x] Ensure the wrapper never shells out to `npx` and never falls back to `markdownlint`, Prettier, mdformat, or any external Markdown linter/formatter
+- [x] Keep `validate` and `fences` subcommands working
+- [x] Ensure formatter flags work: `--check`, `--fix` default, `--all`, `--guard`, `--verify`, `--fences`, `--validate`, `--dry-run`
+- [x] Run oxfmt twice or otherwise verify idempotence before reporting success
 
 ### Phase 5: Anti-Drift & Consistency (Critical)
 
@@ -387,7 +371,7 @@ test/
   - `cli.test.js` — CLI flags and exit codes
   - `guard.test.js` — pre/post snapshot pipeline
 - [ ] Create `test/staged-artifact/verify-install.sh` — staged payload audit
-- [ ] Create `test/check-all.js` — master test runner
+- [x] ~~Create `test/check-all.js` — master test runner~~ Created at `skills/markdown-formatter/scripts/check-all.js`: globs .md/.mdx from directories, runs check-structure/fix/fences in sequence, exit 0/1.
 - [ ] Run unit tests: `node --test test/unit/*.test.js` (Node built-in runner)
 - [ ] Run integration tests: `node --test test/integration/*.test.js` (Node built-in runner)
 - [ ] Run staged artifact verification
