@@ -22,8 +22,8 @@
 
 const { spawnSync } = require("child_process");
 const { readdir } = require("fs/promises");
-const { readFileSync } = require("fs");
-const { join, resolve, existsSync } = require("path");
+const { readFileSync, existsSync } = require("fs");
+const { join, resolve } = require("path");
 
 const SKILL_DIR = resolve(__dirname, "..");
 const LONG_FLAGS = new Set(["check", "fix", "all", "guard", "verify", "fences", "validate", "dry-run", "help"]);
