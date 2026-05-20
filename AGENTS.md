@@ -22,7 +22,7 @@ Agents working here MUST:
 
 - Runtime payload: `skills/markdown-formatter/`
 - Primary CLI: `skills/markdown-formatter/src/index.js`
-- Formatter: Oxfmt resolved from local development install or PATH for the first shippable pass
+- Formatter: Oxfmt resolved from local development install or PATH
 - Safety guard: structural pre/post checks before full formatter rewrites
 
 ## Markdown validation policy
@@ -38,9 +38,11 @@ Do not use these as active validation for repository Markdown:
 
 Use the repository-owned validation path instead:
 
-1. Once implemented, use `node skills/markdown-formatter/src/index.js --check <file>`.
-2. Until the wrapper exists, use Oxfmt directly only for checking repository docs: `oxfmt --check <file>`.
-3. If Oxfmt is unavailable, report that Oxc/Oxfmt validation is unavailable instead of silently substituting another Markdown linter or formatter.
+```bash
+node skills/markdown-formatter/src/index.js --check <file>
+```
+
+If the repository-owned wrapper or Oxfmt is unavailable, report that repository validation is unavailable instead of silently substituting another Markdown linter or formatter.
 
 Exception: raw formatter fixtures under `test/fixtures/` or `references/prior-art/**` may only be formatted when the task explicitly tests formatter behavior on a copy.
 
