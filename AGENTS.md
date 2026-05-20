@@ -59,6 +59,7 @@ Check these files and directories for drift before reporting completion:
 - `test/**`
 - staged install and release scripts, once added
 - changelog or release notes, once added
+- `<!-- open-mem-context -->` section in AGENTS.md (if present, verify content matches current project state)
 
 Before completing a change, explicitly check for stale or mismatched references to:
 
