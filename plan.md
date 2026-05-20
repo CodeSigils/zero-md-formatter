@@ -318,7 +318,8 @@ test/
 ├── fixtures/
 │   ├── current/           # Real-world docs that should format cleanly
 │   │   ├── kitchensink.md
-│   │   └── hermes-intro.md
+│   │   ├── hermes-intro.md
+│   │   └── sample.mdx     # MDX fixture (v1 scope)
 │   ├── oxfmt-spike/      # Oxfmt edge cases (copied from spike)
 │   │   ├── fence-blank.md
 │   │   ├── fence-nested.md
@@ -327,13 +328,13 @@ test/
 │   │   ├── table-semantic-alignment.md
 │   │   ├── html-comment-after-list.md
 │   │   ├── markdown-in-js-template.md
+│   │   ├── safe-formatting-basics.md
 │   │   └── task-lists.md
-│   ├── violations/        # Structural violation fixtures (guard should catch)
-│   │   ├── fence-mismatch.md       # Unclosed/mismatched-length fences
-│   │   ├── table-column-drift.md   # Header/delimiter/row column mismatch
-│   │   └── fence-untitled.md       # Empty language tag on opener
-│   └── idempotence/       # Files that must not change on second pass
-│       └── (uses fixtures from oxfmt-spike/)
+│   └── violations/        # Structural violation fixtures (guard should catch)
+│       ├── fence-mismatch.md       # Unclosed/mismatched-length fences
+│       ├── table-column-drift.md   # Header/delimiter/row column mismatch
+│       ├── fence-untitled.md       # Empty language tag on opener
+│       └── fence-mismatch.md.structure.json  # Snapshot for --check mode
 ├── unit/                  # Unit tests for isolated components
 │   ├── check-structure.test.js     # Structural guard logic
 │   ├── check-fences.test.js       # Fence validation logic
@@ -341,10 +342,11 @@ test/
 ├── integration/           # CLI integration tests
 │   ├── cli.test.js                # CLI flags and exit codes
 │   └── guard.test.js              # Guard pipeline end-to-end
-├── staged-artifact/       # Install verification
-│   └── verify-install.sh          # Staged payload audit script
-└── check-all.js           # Master test runner
+└── staged-artifact/       # Install verification
+    └── verify-install.sh          # Staged payload audit script
 ```
+
+Note: `check-all.js` lives at `skills/markdown-formatter/scripts/check-all.js` (not `test/`). Idempotence tests run against `fixtures/oxfmt-spike/` via `check-all.js` — no separate `fixtures/idempotence/` directory needed.
 
 | Directory           | Purpose                                                       |
 | :----------------- | :------------------------------------------------------------ |
@@ -359,10 +361,7 @@ test/
 
 ### Phase 8: Testing
 
-- [ ] Create violation fixtures in `test/fixtures/violations/`
-  - `fence-mismatch.md` — unclosed/mismatched fences (guard should reject)
-  - `table-column-drift.md` — header/delimiter/row column mismatch (guard should reject)
-  - `fence-untitled.md` — empty language tag (guard should warn)
+- [x] ~~Create violation fixtures in `test/fixtures/violations/`~~ Committed in a99fe1e: fence-mismatch.md, table-column-drift.md, fence-untitled.md + structure snapshots
 - [ ] Create unit tests in `test/unit/`
   - `check-structure.test.js` — structural guard logic
   - `check-fences.test.js` — fence validation logic
@@ -370,13 +369,13 @@ test/
 - [ ] Create integration tests in `test/integration/`
   - `cli.test.js` — CLI flags and exit codes
   - `guard.test.js` — pre/post snapshot pipeline
-- [ ] Create `test/staged-artifact/verify-install.sh` — staged payload audit
-- [x] ~~Create `test/check-all.js` — master test runner~~ Created at `skills/markdown-formatter/scripts/check-all.js`: globs .md/.mdx from directories, runs check-structure/fix/fences in sequence, exit 0/1.
+- [x] ~~Create `test/staged-artifact/verify-install.sh`~~ Committed in staged-install-verify.sh
+- [x] ~~Create `check-all.js`~~ Created at `skills/markdown-formatter/scripts/check-all.js`: globs .md/.mdx from directories, runs check-structure/fix/fences in sequence, exit 0/1. 15 fixture files verified.
 - [ ] Run unit tests: `node --test test/unit/*.test.js` (Node built-in runner)
 - [ ] Run integration tests: `node --test test/integration/*.test.js` (Node built-in runner)
 - [ ] Run staged artifact verification
-- [ ] Run `node scripts/check-consistency.js` (at root `scripts/`, dev-only) — must pass
-- [ ] Run master test runner: `node test/check-all.js` (runs all layers in sequence)
+- [ ] Run `node skills/markdown-formatter/scripts/check-consistency.js` (dev-only) — must pass
+- [ ] Run master test runner: `npm test` → `node skills/markdown-formatter/scripts/check-all.js` (all layers in sequence)
 
 ### Phase 9: Final Agent Guard Policy Review
 
@@ -385,7 +384,7 @@ test/
 - [ ] Remove or explicitly label compatibility-only references to `markdown-lint`, `markdownlint-cli2`, `npx`, `.markdownlint.json`, `format-tables.js` as formatter, and old command paths.
 - [ ] Confirm agent instructions do not tell agents to run dev-only checks from the installed user payload.
 - [ ] Confirm shipped agent instructions mention only files and commands that actually exist in the installed allowlist.
-- [ ] Run stale-text searches and `node scripts/check-consistency.js` after the final policy review.
+- [ ] Run stale-text searches and `node skills/markdown-formatter/scripts/check-consistency.js` after the final policy review.
 
 ---
 
