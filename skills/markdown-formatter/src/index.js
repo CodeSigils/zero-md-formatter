@@ -28,9 +28,8 @@
 
 const { spawnSync } = require("child_process");
 const { readdir } = require("fs/promises");
+const { readFileSync } = require("fs");
 const { join, resolve, existsSync } = require("path");
-
-// Argument parsing
 
 const LONG_FLAGS = [
   "check",
@@ -49,6 +48,8 @@ const SHORT_FLAGS = {
   n: "dry-run",
 };
 
+const argvOffset = 2; // Skip process.argv[0] and argv[1]
+
 function parseArgs(argv) {
   const args = {
     _: [],
@@ -63,7 +64,7 @@ function parseArgs(argv) {
     help: false,
   };
 
-  for (let i = 2; i < argv.length; i++) {
+  for (let i = argvOffset; i < argv.length; i++) {
     const arg = argv[i];
 
     if (arg === "--") {
@@ -132,7 +133,6 @@ Examples:
 // oxfmt resolution (Phase A)
 
 const SKILL_DIR = resolve(__dirname, "..");
-const OXFMT_CACHE_DIR = join(process.env.HOME || "/tmp", ".cache", "agents-markdown-formatter");
 
 function getOxfmtBin() {
   // 1. Check local node_modules/.bin/oxfmt (development install)
@@ -288,9 +288,7 @@ function runTableValidation(dirOrFile) {
 // Idempotence check
 
 function checkIdempotence(filePath) {
-  // Read file content
-  const fs = require("fs");
-  const content1 = fs.readFileSync(filePath, "utf8");
+  const content1 = readFileSync(filePath, "utf8");
 
   // Run first pass
   const result1 = runOxfmt(["--write", filePath]);
@@ -298,7 +296,7 @@ function checkIdempotence(filePath) {
     return false;
   }
 
-  const content2 = fs.readFileSync(filePath, "utf8");
+  const content2 = readFileSync(filePath, "utf8");
 
   // Run second pass
   const result2 = runOxfmt(["--write", filePath]);
@@ -306,9 +304,8 @@ function checkIdempotence(filePath) {
     return false;
   }
 
-  const content3 = fs.readFileSync(filePath, "utf8");
+  const content3 = readFileSync(filePath, "utf8");
 
-  // Check idempotence: content2 should equal content3
   if (content2 !== content3) {
     console.error(`Idempotence check failed: ${filePath}`);
     return false;
