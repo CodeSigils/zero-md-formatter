@@ -51,7 +51,7 @@ From an installed payload, run the bundled `src/index.js` with Node from the ins
 - `node` (>=20)
 - `oxfmt` (either in project's `node_modules/.bin/` or available in PATH)
 
-The formatter first attempts to use a locally installed `oxfmt` (from `node_modules/.bin/`), then falls back to a globally available `oxfmt` in PATH. For installed Hermes use, install `oxfmt` on PATH, for example with `npm install -g oxfmt`. If no binary is found, the tool exits without substituting another Markdown formatter.
+The formatter first checks project-local `node_modules/.bin/oxfmt`, then falls back to `oxfmt` in PATH. For installed Hermes use, make `oxfmt` available on PATH; one option is `npm install -g oxfmt`. If no binary is found, the tool exits without substituting another Markdown formatter.
 
 ## Supported File Types
 
@@ -103,4 +103,3 @@ node skills/markdown-formatter/src/index.js --validate --all docs/ notes/
 
 - Oxfmt documentation: https://oxc.rs/docs/guide/usage/formatter.md
 - Source repository and maintenance docs: https://github.com/CodeSigils/agents-markdown-formatter
-- Repository maintenance policy lives in `AGENTS.md` in the source repository and is not part of the installed runtime payload

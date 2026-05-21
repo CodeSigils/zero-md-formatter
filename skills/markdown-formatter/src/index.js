@@ -26,7 +26,6 @@ const { join, resolve, extname, basename } = require("path");
 const { tmpdir } = require("os");
 
 const SKILL_DIR = resolve(__dirname, "..");
-const REPO_ROOT = resolve(SKILL_DIR, "../..");
 const LONG_FLAGS = new Set(["check", "fix", "all", "guard", "verify", "fences", "validate", "dry-run", "help"]);
 const SHORT_FLAGS = { h: "help", n: "dry-run" };
 const MARKDOWN_EXTENSIONS = new Set([".md", ".markdown", ".mdx"]);
@@ -76,8 +75,8 @@ Prerequisites: oxfmt on PATH or in node_modules/.bin/
 
 function getOxfmtBin() {
   const paths = [
-    join(REPO_ROOT, "node_modules", ".bin", "oxfmt"),
-    join(REPO_ROOT, "node_modules", "oxfmt", "bin", "oxfmt"),
+    join(process.cwd(), "node_modules", ".bin", "oxfmt"),
+    join(process.cwd(), "node_modules", "oxfmt", "bin", "oxfmt"),
     join(SKILL_DIR, "node_modules", ".bin", "oxfmt"),
     join(SKILL_DIR, "node_modules", "oxfmt", "bin", "oxfmt"),
   ];
