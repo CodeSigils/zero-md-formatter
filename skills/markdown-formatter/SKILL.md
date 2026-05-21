@@ -51,7 +51,7 @@ From an installed payload, run the bundled `src/index.js` with Node from the ins
 - `node` (>=20)
 - `oxfmt` (project-local binary or available in PATH)
 
-The formatter first checks the current project's dependency binary directory, then falls back to `oxfmt` in PATH. For installed Hermes use, make `oxfmt` available on PATH; one option is `npm install -g oxfmt`. If no binary is found, the tool exits without substituting another Markdown formatter.
+The formatter checks for `oxfmt` in the active project and then in PATH. For installed Hermes use, make `oxfmt` available on PATH. If no binary is found, the tool exits without substituting another Markdown formatter.
 
 ## Supported File Types
 
