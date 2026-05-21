@@ -13,8 +13,8 @@ const ROOT = resolve(__dirname, "..");
 
 // Files the plan.md "Target Repository / Skill Shape" section says should exist.
 // Stale plan references are errors; missing repository-shape files are errors.
-const CI_WORKFLOW_PATH = join(ROOT, ".github/workflows/ci.yml");
-const NODE_MIN_VERSION = 20;
+const NODE_RUNTIME_MIN_VERSION = 20;
+const NODE_CI_VERSION = 24;
 
 function validateCiWorkflow() {
   const ci = read(".github/workflows/ci.yml");
@@ -47,8 +47,9 @@ function validateCiWorkflow() {
       warnings.push(`ci.yml: missing ${label}`);
     }
   }
-  if (!ci.includes(">=20") && !ci.includes("node-version")) {
-    warnings.push("ci.yml: no node-version specified (defaults to recent, should be fine)");
+  const ciNodeVersionPattern = new RegExp(`node-version:\\s*["']?${NODE_CI_VERSION}["']?`);
+  if (!ciNodeVersionPattern.test(ci)) {
+    warnings.push(`ci.yml: node-version should be ${NODE_CI_VERSION} for CI validation`);
   }
 }
 
@@ -168,8 +169,9 @@ if (pkgJson) {
     }
     if (pkg.engines && pkg.engines.node) {
       const nodeReq = pkg.engines.node;
-      if (!nodeReq.includes(">=20")) {
-        warnings.push(`package.json engines.node is "${nodeReq}" — >=20 is recommended`);
+      const runtimeMin = `>=${NODE_RUNTIME_MIN_VERSION}`;
+      if (!nodeReq.includes(runtimeMin)) {
+        warnings.push(`package.json engines.node is "${nodeReq}" — ${runtimeMin} is recommended`);
       }
     }
   } catch (e) {
