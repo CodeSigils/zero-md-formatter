@@ -13,8 +13,6 @@ const ROOT = resolve(__dirname, "..");
 
 // Files the plan.md "Target Repository / Skill Shape" section says should exist.
 // Stale plan references are errors; missing repository-shape files are errors.
-const NODE_RUNTIME_MIN_VERSION = 20;
-const NODE_CI_VERSION = 24;
 
 function validateCiWorkflow() {
   const ci = read(".github/workflows/ci.yml");
@@ -47,9 +45,13 @@ function validateCiWorkflow() {
       warnings.push(`ci.yml: missing ${label}`);
     }
   }
-  const ciNodeVersionPattern = new RegExp(`node-version:\\s*["']?${NODE_CI_VERSION}["']?`);
-  if (!ciNodeVersionPattern.test(ci)) {
-    warnings.push(`ci.yml: node-version should be ${NODE_CI_VERSION} for CI validation`);
+  const nodeVersionFile = read(".node-version");
+  const ciNodeVersion = nodeVersionFile ? extractNodeVersionFile(nodeVersionFile) : null;
+  if (!ciNodeVersion) {
+    errors.push(".node-version is missing or unreadable");
+  }
+  if (!/node-version-file:\s*\.node-version/.test(ci)) {
+    warnings.push("ci.yml: setup-node should use node-version-file: .node-version for CI validation");
   }
 }
 
@@ -58,6 +60,7 @@ const PLAN_EXPECTED_REPO_SHAPE = new Set([
   "README.md",
   "plan.md",
   "CHANGELOG.md",
+  ".node-version",
   ".oxfmtrc.json",
   ".github/workflows/ci.yml",
   "package.json",
@@ -128,6 +131,16 @@ function findCliFlags(content) {
     .filter((f) => f !== "--");
 }
 
+function extractRuntimeNodeMinVersion(content) {
+  const m = content.match(/NODE_RUNTIME_MIN_VERSION\s*=\s*(\d+)/);
+  return m ? Number(m[1]) : null;
+}
+
+function extractNodeVersionFile(content) {
+  const m = content.trim().match(/^(?:v)?(\d+)(?:\.\d+\.\d+)?$/);
+  return m ? Number(m[1]) : null;
+}
+
 const ACTIVE_DRIFT_CHECK_PATTERNS = [
   "skills/markdown-formatter/SKILL.md",
   "skills/markdown-formatter/src/index.js",
@@ -146,6 +159,18 @@ const KNOWN_OXFMT_KEYS = new Set([
 
 const errors = [];
 const warnings = [];
+
+const readme = read("README.md");
+const skillMd = read("skills/markdown-formatter/SKILL.md");
+const indexJs = read("skills/markdown-formatter/src/index.js");
+const agentsMd = read("AGENTS.md");
+const oxfmtrc = read(".oxfmtrc.json");
+const skillOxfmtrc = read("skills/markdown-formatter/.oxfmtrc.json");
+const runtimeMinNodeVersion = indexJs ? extractRuntimeNodeMinVersion(indexJs) : null;
+
+if (!runtimeMinNodeVersion) {
+  errors.push("skills/markdown-formatter/src/index.js: NODE_RUNTIME_MIN_VERSION is missing or unreadable");
+}
 
 const pkgJson = read("package.json");
 if (pkgJson) {
@@ -167,12 +192,12 @@ if (pkgJson) {
     } else {
       warnings.push("oxfmt not found in package.json devDependencies");
     }
-    if (pkg.engines && pkg.engines.node) {
-      const nodeReq = pkg.engines.node;
-      const runtimeMin = `>=${NODE_RUNTIME_MIN_VERSION}`;
-      if (!nodeReq.includes(runtimeMin)) {
-        warnings.push(`package.json engines.node is "${nodeReq}" — ${runtimeMin} is recommended`);
-      }
+    const nodeReq = pkg.engines && pkg.engines.node;
+    const runtimeMin = `>=${runtimeMinNodeVersion}`;
+    if (!nodeReq) {
+      errors.push("package.json engines.node is missing");
+    } else if (nodeReq !== runtimeMin) {
+      errors.push(`package.json engines.node is "${nodeReq}" — expected "${runtimeMin}" from NODE_RUNTIME_MIN_VERSION`);
     }
   } catch (e) {
     errors.push(`package.json is not valid JSON: ${e.message}`);
@@ -185,13 +210,6 @@ const staleChecks = [
   { pattern: /format-tables\.js.*format|primary.*formatter.*format-tables/i, reason: "format-tables is not the primary formatter" },
   { pattern: /name:\s*markdown-lint/, reason: "skill name should be 'markdown-formatter'" },
 ];
-
-const readme = read("README.md");
-const skillMd = read("skills/markdown-formatter/SKILL.md");
-const indexJs = read("skills/markdown-formatter/src/index.js");
-const agentsMd = read("AGENTS.md");
-const oxfmtrc = read(".oxfmtrc.json");
-const skillOxfmtrc = read("skills/markdown-formatter/.oxfmtrc.json");
 
 if (readme && skillMd) {
   const badgeVer = extractBadgeVersion(readme);
@@ -216,6 +234,22 @@ if (indexJs && skillMd) {
     if (readme && !readme.includes(flag)) {
       warnings.push(`CLI flag "${flag}" in index.js not documented in README.md`);
     }
+  }
+}
+
+if (indexJs && indexJs.includes("--doctor")) {
+  const doctorDocs = [
+    ["README.md", readme],
+    ["skills/markdown-formatter/SKILL.md", skillMd],
+    ["plan.md", read("plan.md")],
+  ];
+  for (const [file, content] of doctorDocs) {
+    if (!content || !content.includes("--doctor")) {
+      errors.push(`CLI flag "--doctor" in index.js not documented in ${file}`);
+    }
+  }
+  if (!/function\s+runDoctor\s*\(/.test(indexJs)) {
+    errors.push('CLI flag "--doctor" is listed but runDoctor() is missing');
   }
 }
 

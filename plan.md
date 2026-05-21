@@ -14,13 +14,14 @@ pipeline preserved under `references/prior-art/`.
 
 ## Current scope
 
-In scope for v1:
+In scope for the current source runtime:
 
 - GFM tables, fenced code blocks, task lists, headings, lists, blockquotes, links, autolinks, inline code, and
   strikethrough
 - MDX files as Markdown + JSX formatting via Oxfmt
 - Structural checks for fence counts/styles/info strings and table column drift
 - Rollback-safe `--fix --guard` behavior when post-format structural drift is detected
+- Read-only `--doctor` diagnostics for runtime readiness
 - Zero npm runtime dependencies in the shipped skill payload
 - Public documentation for the problem cured, formatting philosophy, and table safety policy
 - Repository changelog maintained outside the shipped runtime payload
@@ -43,6 +44,7 @@ agents-markdown-formatter/
 ├── README.md
 ├── plan.md
 ├── CHANGELOG.md
+├── .node-version                     # repository/CI Node.js validation runtime
 ├── .oxfmtrc.json                    # repository/dev config copy
 ├── .github/workflows/ci.yml
 ├── package.json                     # dev-only dependencies and scripts
@@ -104,7 +106,16 @@ Guard semantics:
 - `--verify` is read-only and checks structure, formatting, and idempotence.
 - `--fix --guard` writes through Oxfmt, checks post-format structure, and restores the original file content if
   structural drift is detected.
+- `--doctor` is read-only and checks runtime readiness: Node.js version, Oxfmt resolution/version, bundled config, and
+  required runtime payload files.
 - Temporary `<file>.structure.json` snapshots are deleted after use; pre-existing snapshots are restored unchanged.
+
+Doctor semantics:
+
+- `--doctor` does not require path inputs.
+- `--doctor` exits 0 when required runtime prerequisites are present.
+- `--doctor` exits 1 when Node.js, Oxfmt, bundled config, or required payload files are missing or unusable.
+- `--doctor` reports actionable setup guidance, but does not install dependencies or modify files.
 
 ## Development validation
 
@@ -124,9 +135,21 @@ validate the Oxc/Oxfmt path.
 
 ## Release posture
 
-`v1.0.0` is the current runtime release tag. Repository-only maintenance commits after that tag, such as CI runtime
-updates or anti-drift checker cleanup, do not automatically imply a new runtime release when the shipped files under
-`skills/markdown-formatter/` are unchanged.
+`v1.0.0` is the current published runtime release tag. The current unreleased branch includes runtime payload changes,
+including `--doctor`, so publish-facing claims must distinguish source checkout behavior from the already-published
+`v1.0.0` tag until a new runtime release is cut.
+
+Repository-only maintenance commits, such as CI runtime updates or anti-drift checker cleanup, do not automatically
+imply a new runtime release when the shipped files under `skills/markdown-formatter/` are unchanged. CI reads the exact
+development validation runtime from `.node-version`; the installed runtime minimum remains the exported
+`NODE_RUNTIME_MIN_VERSION` in `skills/markdown-formatter/src/index.js`, mirrored by `package.json` `engines.node` and
+checked by `scripts/check-consistency.js`. Changes under the runtime payload do require staged install verification and
+a new release decision before claiming they are published.
+
+Routine CI LTS bumps update only `.node-version`. Do not update README prerequisites, package `engines.node`, doctor
+output, or runtime docs unless intentionally changing the installed runtime minimum. Runtime-minimum changes are
+user-visible compatibility changes and must update `NODE_RUNTIME_MIN_VERSION`, `package.json` `engines.node`,
+user-facing prerequisites, tests, and changelog together.
 
 Release rules:
 

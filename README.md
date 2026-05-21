@@ -29,6 +29,12 @@ Verify a docs directory without writing changes:
 node ~/.hermes/skills/markdown-formatter/src/index.js --verify --all docs/
 ```
 
+Check installed runtime readiness:
+
+```bash
+node ~/.hermes/skills/markdown-formatter/src/index.js --doctor
+```
+
 ## Why this exists
 
 AI agents write a lot of Markdown: READMEs, plans, runbooks, notes, review comments, and MDX documentation. That output
@@ -62,6 +68,7 @@ Core behavior:
   structural drift is detected.
 - `--verify` checks structure, formatting, and idempotence without modifying files.
 - `--validate` checks structure, fences, and table columns without formatting.
+- `--doctor` checks runtime prerequisites and payload completeness without modifying files.
 - The shipped skill payload has no npm runtime dependencies.
 
 Scope:
@@ -109,17 +116,18 @@ CLI itself does not require Hermes at runtime.
 
 ### Available flags
 
-| Flag         | Description                                                                |
-| ------------ | -------------------------------------------------------------------------- |
-| `--check`    | Check formatting without writing changes; exits 1 if unformatted           |
-| `--fix`      | Format files in-place; default behavior                                    |
-| `--all`      | Process directory inputs recursively; accepts multiple paths               |
-| `--guard`    | Enable structural pre/post guard; rolls back on drift and cleans snapshots |
-| `--verify`   | Check formatting, idempotence, and structural integrity read-only          |
-| `--fences`   | Validate fence structure with `check-fences.js`                            |
-| `--validate` | Run structural, fence, and table validations                               |
-| `--dry-run`  | Show what would be changed without writing files                           |
-| `--help`     | Display help message                                                       |
+| Flag         | Description                                                                 |
+| ------------ | --------------------------------------------------------------------------- |
+| `--check`    | Check formatting without writing changes; exits 1 if unformatted            |
+| `--fix`      | Format files in-place; default behavior                                     |
+| `--all`      | Process directory inputs recursively; accepts multiple paths                |
+| `--guard`    | Enable structural pre/post guard; rolls back on drift and cleans snapshots  |
+| `--verify`   | Check formatting, idempotence, and structural integrity read-only           |
+| `--fences`   | Validate fence structure with `check-fences.js`                             |
+| `--validate` | Run structural, fence, and table validations                                |
+| `--doctor`   | Check Node.js, Oxfmt, config, and payload readiness without modifying files |
+| `--dry-run`  | Show what would be changed without writing files                            |
+| `--help`     | Display help message                                                        |
 
 ## Install instructions
 
@@ -173,6 +181,15 @@ For repository development, use the pinned devDependency:
 ```bash
 npm ci
 ```
+
+To diagnose an installed skill without modifying files:
+
+```bash
+node ~/.hermes/skills/markdown-formatter/src/index.js --doctor
+```
+
+`--doctor` exits 0 when Node.js, `oxfmt`, bundled config, and required runtime payload files are ready. It exits 1 with
+actionable guidance when a required runtime piece is missing.
 
 The formatter passes the bundled runtime config at `skills/markdown-formatter/.oxfmtrc.json` to `oxfmt` and disables
 nested config discovery for predictable installed behavior. The config wraps prose at 120 characters and leaves fenced

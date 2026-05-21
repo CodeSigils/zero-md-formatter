@@ -61,6 +61,7 @@ From an installed payload, run the bundled `src/index.js` with Node from the ins
 - `--verify`: Run formatter and check structural integrity without writing changes
 - `--fences`: Validate fenced code block language info strings
 - `--validate`: Run structural, fence, and table validations
+- `--doctor`: Check Node.js, Oxfmt, config, and payload readiness without modifying files
 - `--dry-run`: Show what would be changed without writing files
 - `--help`: Display help message
 
@@ -71,6 +72,9 @@ From an installed payload, run the bundled `src/index.js` with Node from the ins
 
 The formatter checks for `oxfmt` in the active project and then in PATH. For installed Hermes use, make `oxfmt`
 available on PATH. If no binary is found, the tool exits without substituting another Markdown formatter.
+
+Run `--doctor` to check runtime readiness without modifying files. It exits 0 when Node.js, `oxfmt`, bundled config, and
+required runtime payload files are ready, and exits 1 with actionable guidance when a required runtime piece is missing.
 
 ## Supported file types
 
@@ -86,6 +90,7 @@ Agents should run the Markdown formatter after creating or editing Markdown file
 2. Use `--fix --guard` during development when automatic formatting should be rollback-safe.
 3. Use `--verify` to check formatting, idempotence, and structural integrity without modifying files.
 4. Use `--validate` when you only need structural, fence, and table checks.
+5. Use `--doctor` before formatting work when installed runtime readiness is uncertain.
 
 ## Severity levels
 
@@ -117,6 +122,12 @@ Full validation workflow:
 
 ```bash
 node skills/markdown-formatter/src/index.js --validate --all docs/ notes/
+```
+
+Diagnose installed runtime readiness:
+
+```bash
+node skills/markdown-formatter/src/index.js --doctor
 ```
 
 ## References

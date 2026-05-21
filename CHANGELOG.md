@@ -12,10 +12,16 @@
 - Sharpen package metadata with agent-safe Markdown formatter keywords.
 - Update packaged skill description and tags for Hermes-side discovery.
 - Update GitHub repository description and topics for search discovery.
-- Run CI on Node 24 while keeping the documented runtime requirement at Node.js >=20.
-- Clarify anti-drift checks so runtime Node compatibility and CI validation runtime are tracked separately.
-- Document release posture after `v1.0.0`: current post-tag changes are maintenance-only and do not alter the shipped
-  runtime payload.
+- Run CI from `.node-version` while keeping the documented runtime requirement at Node.js >=20.
+- Clarify anti-drift checks so runtime Node compatibility, package `engines.node`, and CI validation runtime are tracked
+  separately.
+- Document that routine CI LTS bumps update only `.node-version`; installed runtime-minimum changes remain deliberate
+  compatibility changes.
+- Add read-only `--doctor` diagnostics for Node.js, Oxfmt, bundled config, and runtime payload readiness.
+- Clarify that `--doctor` is an unreleased runtime payload change after `v1.0.0`; a new runtime release decision is
+  required before claiming published installs include it.
+- Document release posture after `v1.0.0`: repository-only changes do not alter the shipped runtime payload, while
+  runtime payload changes require a new release decision before published-readiness claims.
 
 ## v1.0.0
 

@@ -145,6 +145,13 @@ else
     exit 1
 fi
 
+if ./skills/markdown-formatter/src/index.js --doctor; then
+    echo "✓ Staged --doctor succeeded"
+else
+    echo "❌ FAILED: Staged --doctor failed"
+    exit 1
+fi
+
 if ./skills/markdown-formatter/src/index.js --fences "$VALID_FIXTURE"; then
     echo "✓ Staged --fences succeeded"
 else

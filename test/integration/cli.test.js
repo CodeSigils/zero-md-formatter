@@ -9,7 +9,7 @@ const ROOT = resolve(__dirname, '../..');
 const CLI = join(ROOT, 'skills/markdown-formatter/src/index.js');
 
 function runCli(args, options = {}) {
-  return spawnSync('node', [CLI, ...args], {
+  return spawnSync(process.execPath, [CLI, ...args], {
     cwd: ROOT,
     encoding: 'utf8',
     ...options,
@@ -124,6 +124,33 @@ describe('markdown formatter CLI integration', () => {
       assert.match(result.stdout + result.stderr, /Structural drift|Table/);
       assert.equal(readFileSync(file, 'utf8'), original);
       assert.equal(existsSync(`${file}.structure.json`), false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('--doctor reports readiness without requiring path inputs', () => {
+    const result = runCli(['--doctor']);
+
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stdout, /Markdown Formatter Doctor/);
+    assert.match(result.stdout, /Node\.js:/);
+    assert.match(result.stdout, /oxfmt:/);
+    assert.match(result.stdout, /Ready: yes/);
+  });
+
+  it('--doctor exits non-zero when oxfmt is unavailable', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'markdown-formatter-doctor-'));
+    try {
+      const result = runCli(['--doctor'], {
+        cwd: dir,
+        env: { ...process.env, PATH: '' },
+      });
+
+      assert.equal(result.status, 1, result.stdout + result.stderr);
+      assert.match(result.stdout, /Markdown Formatter Doctor/);
+      assert.match(result.stdout, /oxfmt: missing/);
+      assert.match(result.stdout, /Ready: no/);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

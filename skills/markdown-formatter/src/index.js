@@ -12,6 +12,7 @@
  *   --verify     Run formatting, idempotence, and structural validation checks without modifying files
  *   --fences     Validate fenced code blocks
  *   --validate   Run all structural validations
+ *   --doctor     Check runtime prerequisites without modifying files
  *   --dry-run    Preview changes
  *   --help       Show this help
  *
@@ -27,12 +28,13 @@ const { tmpdir } = require("os");
 
 const SKILL_DIR = resolve(__dirname, "..");
 const OXFMT_CONFIG = join(SKILL_DIR, ".oxfmtrc.json");
-const LONG_FLAGS = new Set(["check", "fix", "all", "guard", "verify", "fences", "validate", "dry-run", "help"]);
+const NODE_RUNTIME_MIN_VERSION = 20;
+const LONG_FLAGS = new Set(["check", "fix", "all", "guard", "verify", "fences", "validate", "doctor", "dry-run", "help"]);
 const SHORT_FLAGS = { h: "help", n: "dry-run" };
 const MARKDOWN_EXTENSIONS = new Set([".md", ".markdown", ".mdx"]);
 
 function parseArgs(argv) {
-  const args = { _: [], check: false, fix: false, all: false, guard: false, verify: false, fences: false, validate: false, "dry-run": false, help: false };
+  const args = { _: [], check: false, fix: false, all: false, guard: false, verify: false, fences: false, validate: false, doctor: false, "dry-run": false, help: false };
 
   for (let i = 2; i < argv.length; i++) {
     const arg = argv[i];
@@ -67,6 +69,7 @@ Options:
   --verify          Run formatting, idempotence, and structural validation checks without modifying files
   --fences          Validate fenced code blocks
   --validate        Run all structural validations
+  --doctor          Check runtime prerequisites without modifying files
   --dry-run, -n     Preview changes
   --help, -h        Show this help
 
@@ -74,7 +77,7 @@ Prerequisites: oxfmt on PATH or in node_modules/.bin/
 `);
 }
 
-function getOxfmtBin() {
+function resolveOxfmtBin() {
   const paths = [
     join(process.cwd(), "node_modules", ".bin", "oxfmt"),
     join(process.cwd(), "node_modules", "oxfmt", "bin", "oxfmt"),
@@ -86,9 +89,72 @@ function getOxfmtBin() {
   try { if (spawnSync("oxfmt", ["--version"], { encoding: "utf8", timeout: 5000 }).status === 0) return "oxfmt"; }
   catch { /* not on PATH */ }
 
+  return null;
+}
+
+function getOxfmtBin() {
+  const bin = resolveOxfmtBin();
+  if (bin) return bin;
+
   console.error("Error: oxfmt not found.");
   console.error("Install oxfmt on PATH for installed use, or run npm ci in a development checkout.");
   process.exit(1);
+}
+
+function isSupportedNodeVersion(version) {
+  const major = Number(String(version).replace(/^v/, "").split(".")[0]);
+  return Number.isInteger(major) && major >= NODE_RUNTIME_MIN_VERSION;
+}
+
+function runDoctor(options = {}) {
+  const log = options.log || ((line) => console.log(line));
+  const exists = options.exists || existsSync;
+  const nodeVersion = options.nodeVersion || process.version;
+  const resolveOxfmt = options.resolveOxfmt || resolveOxfmtBin;
+  const runVersion = options.runVersion || ((bin) => spawnSync(bin, ["--version"], { encoding: "utf8", timeout: 5000, shell: process.platform === "win32" }));
+
+  const requiredFiles = [
+    join(SKILL_DIR, "SKILL.md"),
+    OXFMT_CONFIG,
+    join(SKILL_DIR, "src", "index.js"),
+    join(SKILL_DIR, "scripts", "check-structure.js"),
+    join(SKILL_DIR, "scripts", "check-fences.js"),
+    join(SKILL_DIR, "scripts", "check-tables.js"),
+  ];
+
+  let ok = true;
+  log("Markdown Formatter Doctor");
+  log("");
+
+  const nodeOk = isSupportedNodeVersion(nodeVersion);
+  ok = ok && nodeOk;
+  log(`Node.js: ${nodeVersion} (${nodeOk ? "ok" : `requires >=${NODE_RUNTIME_MIN_VERSION}`})`);
+
+  const oxfmt = resolveOxfmt();
+  if (oxfmt) {
+    const version = runVersion(oxfmt);
+    const versionText = `${version.stdout || version.stderr || ""}`.trim();
+    const versionOk = version.status === 0;
+    ok = ok && versionOk;
+    log(`oxfmt: ${oxfmt}${versionText ? ` (${versionText})` : ""}${versionOk ? "" : " (version check failed)"}`);
+  } else {
+    ok = false;
+    log("oxfmt: missing");
+    log("Install oxfmt on PATH for installed use, or run npm ci in a development checkout.");
+  }
+
+  log(`Config: ${OXFMT_CONFIG} (${exists(OXFMT_CONFIG) ? "ok" : "missing"})`);
+  if (!exists(OXFMT_CONFIG)) ok = false;
+
+  for (const file of requiredFiles) {
+    const present = exists(file);
+    if (!present) ok = false;
+    log(`Payload: ${file} (${present ? "ok" : "missing"})`);
+  }
+
+  log("");
+  log(`Ready: ${ok ? "yes" : "no"}`);
+  return ok;
 }
 
 function runOxfmt(oxfmtArgs) {
@@ -216,6 +282,7 @@ function processFile(filePath, args) {
 
 function main(argv = process.argv) {
   const args = parseArgs(argv);
+  if (args.doctor) return runDoctor() ? 0 : 1;
   if (args.help || (args._.length === 0 && !args.all)) {
     printHelp();
     return 0;
@@ -243,7 +310,10 @@ if (require.main === module) {
 }
 
 module.exports = {
+  NODE_RUNTIME_MIN_VERSION,
   parseArgs,
+  resolveOxfmtBin,
+  runDoctor,
   findMarkdownFiles,
   resolveInputFiles,
   processFile,
