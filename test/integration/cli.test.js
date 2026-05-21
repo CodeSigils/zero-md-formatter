@@ -1,7 +1,7 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
-const { existsSync, mkdtempSync, readFileSync, writeFileSync, rmSync } = require('node:fs');
+const { copyFileSync, existsSync, mkdtempSync, readFileSync, writeFileSync, rmSync } = require('node:fs');
 const { join, resolve } = require('node:path');
 const { tmpdir } = require('node:os');
 
@@ -106,6 +106,24 @@ describe('markdown formatter CLI integration', () => {
 
       assert.equal(result.status, 0, result.stdout + result.stderr);
       assert.equal(readFileSync(snapshot, 'utf8'), originalSnapshot);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('--fix --guard restores original content when structural drift is detected', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'markdown-formatter-guard-rollback-'));
+    const file = join(dir, 'table-column-drift.md');
+    try {
+      copyFileSync(join(ROOT, 'test/fixtures/violations/table-column-drift.md'), file);
+      const original = readFileSync(file, 'utf8');
+
+      const result = runCli(['--fix', '--guard', file]);
+
+      assert.notStrictEqual(result.status, 0);
+      assert.match(result.stdout + result.stderr, /Structural drift|Table/);
+      assert.equal(readFileSync(file, 'utf8'), original);
+      assert.equal(existsSync(`${file}.structure.json`), false);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

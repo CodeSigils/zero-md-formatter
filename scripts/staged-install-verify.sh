@@ -11,6 +11,7 @@ STAGE_DIR="${SOURCE_DIR}/test/staged-artifact"
 # Define the exact runtime allowlist (what should be copied)
 RUNTIME_ALLOWLIST=(
     "skills/markdown-formatter/SKILL.md"
+    "skills/markdown-formatter/.oxfmtrc.json"
     "skills/markdown-formatter/src/index.js"
     "skills/markdown-formatter/scripts/check-structure.js"
     "skills/markdown-formatter/scripts/check-fences.js"
@@ -178,6 +179,31 @@ if [[ -e "${GUARD_FIXTURE}.structure.json" ]]; then
 else
     echo "✓ Staged --guard cleaned temporary structure snapshot"
 fi
+
+DRIFT_FIXTURE="$FIXTURE_DIR/drift.md"
+cat > "$DRIFT_FIXTURE" <<'EOF'
+# Drift Fixture
+
+| Name  | Age  |
+| ----- | ---- |
+| Dave  | 35 | Chicago | Denver |
+| Erin  | 22 |
+EOF
+ORIGINAL_DRIFT_CONTENT="$(cat "$DRIFT_FIXTURE")"
+if ./skills/markdown-formatter/src/index.js --fix --guard "$DRIFT_FIXTURE" > "$FIXTURE_DIR/drift.out" 2>&1; then
+    echo "❌ FAILED: Staged --guard unexpectedly accepted structural drift fixture"
+    cat "$FIXTURE_DIR/drift.out"
+    exit 1
+fi
+if [[ "$(cat "$DRIFT_FIXTURE")" != "$ORIGINAL_DRIFT_CONTENT" ]]; then
+    echo "❌ FAILED: Staged --guard did not restore original content after drift"
+    exit 1
+fi
+if [[ -e "${DRIFT_FIXTURE}.structure.json" ]]; then
+    echo "❌ FAILED: Staged --guard left a temporary drift snapshot"
+    exit 1
+fi
+echo "✓ Staged --guard restores content and cleans snapshot on structural drift"
 
 echo ""
 echo "STAGED INSTALL VERIFICATION PASSED"

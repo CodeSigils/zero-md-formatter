@@ -8,7 +8,7 @@
  *   --check      Read-only format check (exit 0 if clean)
  *   --fix        Apply formatting (default)
  *   --all        Process directories recursively
- *   --guard      Snapshot before/after formatting
+ *   --guard      Pre/post structural check; rollback writes on drift; clean snapshots
  *   --verify     Run formatting, idempotence, and structural validation checks without modifying files
  *   --fences     Validate fenced code blocks
  *   --validate   Run all structural validations
@@ -26,6 +26,7 @@ const { join, resolve, extname, basename } = require("path");
 const { tmpdir } = require("os");
 
 const SKILL_DIR = resolve(__dirname, "..");
+const OXFMT_CONFIG = join(SKILL_DIR, ".oxfmtrc.json");
 const LONG_FLAGS = new Set(["check", "fix", "all", "guard", "verify", "fences", "validate", "dry-run", "help"]);
 const SHORT_FLAGS = { h: "help", n: "dry-run" };
 const MARKDOWN_EXTENSIONS = new Set([".md", ".markdown", ".mdx"]);
@@ -62,7 +63,7 @@ Options:
   --check           Read-only format check (exit 0 if clean)
   --fix             Apply formatting (default)
   --all             Process directories recursively
-  --guard           Snapshot before/after formatting
+  --guard           Pre/post structural check; rollback writes on drift; clean snapshots
   --verify          Run formatting, idempotence, and structural validation checks without modifying files
   --fences          Validate fenced code blocks
   --validate        Run all structural validations
@@ -91,7 +92,8 @@ function getOxfmtBin() {
 }
 
 function runOxfmt(oxfmtArgs) {
-  const result = spawnSync(getOxfmtBin(), oxfmtArgs, { encoding: "utf8", shell: process.platform === "win32" });
+  const configArgs = existsSync(OXFMT_CONFIG) ? ["--config", OXFMT_CONFIG, "--disable-nested-config"] : [];
+  const result = spawnSync(getOxfmtBin(), [...configArgs, ...oxfmtArgs], { encoding: "utf8", shell: process.platform === "win32" });
   if (result.stdout) process.stdout.write(result.stdout);
   if (result.stderr) process.stderr.write(result.stderr);
   return result.status === 0;
@@ -182,12 +184,20 @@ function processFile(filePath, args) {
       return true;
     }
     const snapshotPath = `${filePath}.structure.json`;
+    const originalContent = readFileSync(filePath, "utf8");
     const hadSnapshot = existsSync(snapshotPath);
     const previousSnapshot = hadSnapshot ? readFileSync(snapshotPath, "utf8") : null;
     try {
       if (!runScript("check-structure.js", "--snapshot", filePath)) return false;
-      if (!runOxfmt(["--write", filePath])) return false;
-      return runScript("check-structure.js", "--check", filePath);
+      if (!runOxfmt(["--write", filePath])) {
+        writeFileSync(filePath, originalContent);
+        return false;
+      }
+      if (!runScript("check-structure.js", "--check", filePath)) {
+        writeFileSync(filePath, originalContent);
+        return false;
+      }
+      return true;
     } finally {
       if (hadSnapshot) writeFileSync(snapshotPath, previousSnapshot);
       else rmSync(snapshotPath, { force: true });

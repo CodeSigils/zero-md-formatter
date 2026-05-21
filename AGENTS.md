@@ -24,7 +24,7 @@ Agents working here MUST:
 - Runtime payload: `skills/markdown-formatter/`
 - Primary CLI: `skills/markdown-formatter/src/index.js`
 - Formatter: Oxfmt resolved from local development install or PATH
-- Safety guard: structural pre/post checks before full formatter rewrites
+- Safety guard: optional `--guard` structural pre/post checks; write mode restores original file content on post-format drift and cleans temporary snapshots
 
 ## Markdown validation policy
 

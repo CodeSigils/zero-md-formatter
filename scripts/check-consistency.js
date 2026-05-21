@@ -63,6 +63,7 @@ const PLAN_EXPECTED_REPO_SHAPE = new Set([
   "scripts/check-consistency.js",
   "scripts/staged-install-verify.sh",
   "skills/markdown-formatter/SKILL.md",
+  "skills/markdown-formatter/.oxfmtrc.json",
   "skills/markdown-formatter/src/index.js",
   "skills/markdown-formatter/scripts/check-fences.js",
   "skills/markdown-formatter/scripts/check-structure.js",
@@ -186,6 +187,7 @@ const skillMd = read("skills/markdown-formatter/SKILL.md");
 const indexJs = read("skills/markdown-formatter/src/index.js");
 const agentsMd = read("AGENTS.md");
 const oxfmtrc = read(".oxfmtrc.json");
+const skillOxfmtrc = read("skills/markdown-formatter/.oxfmtrc.json");
 
 if (readme && skillMd) {
   const badgeVer = extractBadgeVersion(readme);
@@ -224,6 +226,12 @@ if (oxfmtrc) {
   } catch (e) {
     errors.push(`.oxfmtrc.json is not valid JSON: ${e.message}`);
   }
+}
+
+if (!skillOxfmtrc) {
+  errors.push("skills/markdown-formatter/.oxfmtrc.json is missing from the runtime payload");
+} else if (oxfmtrc && skillOxfmtrc !== oxfmtrc) {
+  errors.push("root .oxfmtrc.json and skills/markdown-formatter/.oxfmtrc.json differ");
 }
 
 for (const [file, content] of [
