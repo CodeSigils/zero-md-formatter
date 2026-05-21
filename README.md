@@ -43,19 +43,23 @@ Hermes is the first packaged skill target: `SKILL.md`, the install path, and shi
 
 ## Prerequisites
 
-The skill requires an `oxfmt` binary available in one of these locations:
+The formatter requires Node.js >=20 and an `oxfmt` binary available in one of these locations:
 
 1. **Local development**: `node_modules/.bin/oxfmt` (when development dependencies installed)
 2. **System PATH**: `oxfmt` available globally in shell
-3. **Installation failure**: Clear instructions to install oxfmt via:
 
-   ```bash
-   # Via Cargo (Rust)
-   cargo install oxfmt
+For an installed Hermes skill, put `oxfmt` on PATH:
 
-   # Via npm (development only)
-   npm install -D oxfmt
-   ```
+```bash
+npm install -g oxfmt
+oxfmt --version
+```
+
+For repository development, use the pinned devDependency instead:
+
+```bash
+npm ci
+```
 
 The shipped skill payload contains **zero npm runtime dependencies** and relies on an externally provided `oxfmt` binary.
 
@@ -98,7 +102,14 @@ Reference fixtures and test organization:
 For Hermes Agent users:
 
 ```bash
-hermes skills install markdown-formatter
+hermes skills install CodeSigils/agents-markdown-formatter/markdown-formatter --yes
+```
+
+If Hermes blocks installation because the community-source security scanner flags the runtime wrapper for manual review, inspect the warnings and then install with `--force` only if they match the reviewed source:
+
+```bash
+hermes skills inspect CodeSigils/agents-markdown-formatter/markdown-formatter
+hermes skills install CodeSigils/agents-markdown-formatter/markdown-formatter --yes --force
 ```
 
 The installed skill payload contains only:

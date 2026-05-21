@@ -87,7 +87,7 @@ function getOxfmtBin() {
   catch { /* not on PATH */ }
 
   console.error("Error: oxfmt not found.");
-  console.error("Install: npm install (development checkout) or install oxfmt on PATH.");
+  console.error("Install oxfmt on PATH for installed use, or run npm ci in a development checkout.");
   process.exit(1);
 }
 
