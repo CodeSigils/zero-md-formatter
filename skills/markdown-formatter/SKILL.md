@@ -77,6 +77,16 @@ substituting another Markdown formatter.
 Run `--doctor` to check runtime readiness without modifying files. It exits 0 when Node.js, `oxfmt`, bundled config, and
 required runtime payload files are ready, and exits 1 with actionable guidance when a required runtime piece is missing.
 
+## Fence policy
+
+Fence validation is structural, not style-only:
+
+- Bare language-less fences are valid and allowed.
+- Whitespace-only fence info strings are invalid because they usually indicate accidental trailing whitespace.
+- Language info strings that start with whitespace are invalid because the intended language tag is ambiguous.
+- Unclosed fences are invalid.
+- Post-format fence count/style drift is invalid and is rolled back by `--fix --guard`.
+
 ## Supported file types
 
 - `.md`

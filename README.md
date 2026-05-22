@@ -91,17 +91,27 @@ from a Markdown formatter into a multi-language formatter orchestrator, increasi
 The intended workflow is to absorb normalization churn once, then keep future diffs small and predictable with
 `--check`, `--verify`, and CI.
 
-## Table safety policy
+## Table and fence safety policy
 
-Table safety is enforced by repository-owned structural guards, not by `.oxfmtrc.json`. Oxfmt performs the canonical
-Markdown formatting pass, while the local guard scripts verify that table and fence structure survived formatting:
+Table and fence safety is enforced by repository-owned structural guards, not by `.oxfmtrc.json`. Oxfmt performs the
+canonical Markdown formatting pass, while the local guard scripts verify that table and fence structure survived
+formatting:
 
 - `check-tables.js` validates GFM table column counts and pipe consistency.
+- `check-fences.js` validates fence closure and accidental malformed info strings.
 - `check-structure.js` snapshots fences and tables before formatting, then compares them afterward.
 - `--guard` restores the original file content if post-format structure changes.
 
-This keeps table handling conservative: validate strongly, avoid semantic rewriting, and do not pretend the formatter
-configuration can express table-safety semantics it does not control.
+Fence policy is intentionally structural, not style-only:
+
+- Bare language-less fences are valid and allowed.
+- Whitespace-only fence info strings are invalid because they usually indicate accidental trailing whitespace.
+- Language info strings that start with whitespace are invalid because the intended language tag is ambiguous.
+- Unclosed fences are invalid.
+- Post-format fence count/style drift is invalid and is rolled back by `--fix --guard`.
+
+This keeps handling conservative: validate strongly, avoid semantic rewriting, and do not pretend the formatter
+configuration can express table- or fence-safety semantics it does not control.
 
 ## CLI reference
 

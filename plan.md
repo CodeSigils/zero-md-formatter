@@ -101,6 +101,10 @@ unchanged.
 
 Guard semantics:
 
+- Bare language-less fences are valid and allowed; language-required policy is out of scope for the default structural
+  guard.
+- Whitespace-only fence info strings, leading-whitespace language tags, unclosed fences, table column drift, and
+  post-format fence count/style drift are invalid structural failures.
 - `--check --guard` is read-only.
 - `--dry-run --guard` is read-only.
 - `--verify` is read-only and checks structure, formatting, and idempotence.
