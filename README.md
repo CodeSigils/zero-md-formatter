@@ -82,7 +82,9 @@ Scope:
 
 The formatter intentionally normalizes Markdown prose while treating embedded code as opaque payload. The shipped Oxfmt
 config uses `printWidth: 120` and `proseWrap: "always"` so long agent-generated paragraphs become stable, bounded output
-instead of remaining as uncontrolled single-line prose.
+instead of remaining as uncontrolled single-line prose. With `proseWrap: "always"`, adjacent paragraph content —
+including indented list continuations without a blank-line separator — is reflowed onto the parent line. This is
+expected bounded-wrap behavior, not a structural change.
 
 The same config sets `embeddedLanguageFormatting: "off"`. Fenced code blocks, examples, partial snippets, pseudocode,
 and MDX embedded regions are often intentionally incomplete or language-mixed. Reformatting them would turn this tool

@@ -179,7 +179,7 @@ if (pkgJson) {
     const devDeps = pkg.devDependencies || {};
     const pkgVersion = devDeps.oxfmt;
     if (pkgVersion) {
-      const latest = "0.51.0";
+      const latest = "0.54.0";
       if (pkgVersion !== latest) {
         if (/^[~^*><=]/.test(pkgVersion)) {
           errors.push(`oxfmt in package.json must be pinned exactly; found "${pkgVersion}"`);
