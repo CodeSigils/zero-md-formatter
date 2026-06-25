@@ -250,16 +250,19 @@ Recommended release practice:
    ```
 
 4. Confirm GitHub Actions is green on the commit being tagged.
-5. Create the release from the annotated tag:
+5. Run the release script (requires `gh` CLI authenticated):
 
    ```bash
-   gh release create vX.Y.Z --title "vX.Y.Z" --notes "$(git tag -l --format='%(contents)' vX.Y.Z)"
+   npm run release
    ```
 
-   This is a separate step from `git push origin vX.Y.Z` — GitHub Releases are not automatically created from annotated
-   tags.
+   The script reads the version from `package.json`, validates preconditions (clean tree, CHANGELOG section exists, tag
+   is new, `gh` authenticated), creates an annotated tag, and publishes the GitHub Release with the matching CHANGELOG
+   section as body. If the release must be aborted after tagging, run `git tag -d vX.Y.Z` to remove the local tag before
+   fixing.
 
-6. Avoid expanding scope during release cleanup; use follow-up issues for new Markdown dialects, embedded-code
+6. Verify CI passes for the tag push.
+7. Avoid expanding scope during release cleanup; use follow-up issues for new Markdown dialects, embedded-code
    formatting, or broader configuration systems.
 
 ## Agent contract
