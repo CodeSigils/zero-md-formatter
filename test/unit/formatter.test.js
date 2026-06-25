@@ -12,6 +12,7 @@ const {
   getOxfmtPathCandidates,
   getSpawnOptions,
   resolveInputFiles,
+  repairTableColumns,
 } = require('../../skills/markdown-formatter/src/index.js');
 
 describe('formatter CLI helper unit tests', () => {
@@ -107,11 +108,11 @@ describe('formatter CLI helper unit tests', () => {
 
   it('warns when oxfmt version exceeds tested maximum from --doctor checks', () => {
     const { result, output } = collectDoctor({
-      runVersion: () => ({ status: 0, stdout: 'oxfmt 0.55.0\n', stderr: '' }),
+      runVersion: () => ({ status: 0, stdout: 'oxfmt 0.57.0\n', stderr: '' }),
     });
 
     assert.equal(result, true);
-    assert.match(output, new RegExp(`Version 0.55.0 exceeds tested maximum ${OXFMT_MAX_VERSION}`));
+    assert.match(output, new RegExp(`Version 0.57.0 exceeds tested maximum ${OXFMT_MAX_VERSION}`));
     assert.match(output, /Ready: yes/);
   });
 
@@ -119,7 +120,7 @@ describe('formatter CLI helper unit tests', () => {
     assert.deepStrictEqual(isSupportedOxfmtVersion('oxfmt 0.54.0\n'), { version: '0.54.0', supported: true });
     assert.deepStrictEqual(isSupportedOxfmtVersion('Version: 0.54.0\n'), { version: '0.54.0', supported: true });
     assert.deepStrictEqual(isSupportedOxfmtVersion('oxfmt 0.53.0\n'), { version: '0.53.0', supported: true });
-    assert.deepStrictEqual(isSupportedOxfmtVersion('oxfmt 0.55.0\n'), { version: '0.55.0', supported: false });
+    assert.deepStrictEqual(isSupportedOxfmtVersion('oxfmt 0.57.0\n'), { version: '0.57.0', supported: false });
     assert.equal(isSupportedOxfmtVersion('not a version'), null);
   });
 
@@ -163,5 +164,138 @@ describe('formatter CLI helper unit tests', () => {
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
+  });
+});
+
+describe('repairTableColumns', () => {
+  it('returns original content when table is already structurally valid', () => {
+    const input = [
+      '| a | b | c |',
+      '|---|---|---|',
+      '| 1 | 2 | 3 |',
+      '| 4 | 5 | 6 |',
+    ].join('\n');
+    assert.equal(repairTableColumns(input), input);
+  });
+
+  it('pads data rows short by one trailing column', () => {
+    const input = [
+      '| a | b | c |',
+      '|---|---|---|',
+      '| 1 | 2 |',
+    ].join('\n');
+    const result = repairTableColumns(input);
+    const cells = result.split('\n')[2].split('|').map((c) => c.trim());
+    assert.equal(cells.length, 5, 'should have 5 pipe-separated slots');
+    assert.equal(cells[3], '', 'padded cell should be empty');
+  });
+
+  it('pads header row when it has fewer columns than delimiter', () => {
+    const input = [
+      '| a | b |',
+      '|---|---|---|',
+      '| 1 | 2 | 3 |',
+    ].join('\n');
+    const result = repairTableColumns(input);
+    const cells = result.split('\n')[0].split('|').map((c) => c.trim());
+    assert.equal(cells.length, 5, 'repaired header should have 3 cols');
+  });
+
+  it('pads delimiter when it has fewer columns than header', () => {
+    const input = [
+      '| a | b | c |',
+      '|---|---|',
+      '| 1 | 2 |',
+    ].join('\n');
+    const result = repairTableColumns(input);
+    const delimCells = result.split('\n')[1].split('|').map((c) => c.trim());
+    assert.equal(delimCells.length, 5, 'delimiter should be padded to 3 cols');
+  });
+
+  it('handles 2-col header with 3-col separator (the original malformation)', () => {
+    // This is a simplified version of the exact pattern from the doom config Quick Index table
+    const input = [
+      '| header one | header two |',
+      '| :--------- | :--------- | :----------- |',
+      '| data one   | data two   |',
+    ].join('\n');
+    const result = repairTableColumns(input);
+    const lines = result.split('\n');
+    const pipeCount0 = (lines[0].match(/\|/g) || []).length;
+    const pipeCount2 = (lines[2].match(/\|/g) || []).length;
+    assert.equal(pipeCount0, 4, 'header should have 4 pipes for 3 cols');
+    assert.equal(pipeCount2, 4, 'data row should have 4 pipes for 3 cols');
+    // Verify it passes structural validation
+    const { validateTables } = require('../../skills/markdown-formatter/scripts/check-tables.js');
+    const errors = validateTables(result);
+    assert.deepStrictEqual(errors, [], 'repaired table should have no structural violations');
+  });
+
+  it('returns original when no pipes are present', () => {
+    const input = '# Hello\n\nplain text\n';
+    assert.equal(repairTableColumns(input), input);
+  });
+
+  it('does not repair non-table lines with pipes (inline code, prose)', () => {
+    const input = 'Use `pipe | symbol` in code.\n';
+    assert.equal(repairTableColumns(input), input);
+  });
+
+  it('pads multiple data rows in the same table', () => {
+    const input = [
+      '| a | b | c |',
+      '|---|---|---|',
+      '| 1 | 2 |',
+      '| 3 | 4 |',
+      '| 5 | 6 |',
+    ].join('\n');
+    const result = repairTableColumns(input);
+    const { splitTableCells } = require('../../skills/markdown-formatter/scripts/check-tables.js');
+    const lines = result.split('\n');
+    for (let i = 2; i <= 4; i++) {
+      const cells = splitTableCells(lines[i]);
+      assert.equal(cells.length, 3, `row ${i} should have 3 cells, got ${cells.length}: "${lines[i]}"`);
+    }
+  });
+
+  it('returns original when table has only header and delimiter (no data rows)', () => {
+    const input = [
+      '| a | b | c |',
+      '|---|---|---|',
+    ].join('\n');
+    assert.equal(repairTableColumns(input), input);
+  });
+
+  it('repairs two adjacent tables independently', () => {
+    const input = [
+      '| a | b |',
+      '|---|---|---|',  // short header → pad to 3
+      '| 1 | 2 | 3 |',
+      '',
+      '| x | y | z |',
+      '|---|---|---|',  // already fine
+      '| 4 | 5 | 6 |',
+    ].join('\n');
+    const result = repairTableColumns(input);
+    const lines = result.split('\n');
+    const headerCells = lines[0].split('|').map((c) => c.trim());
+    // header was | a | b |, padded → | a | b | |
+    assert.equal(headerCells.length, 5, 'first table header should have 3 cols after repair');
+    // second table untouched
+    assert.equal(lines[4], input.split('\n')[4], 'second table header should be unchanged');
+  });
+
+  it('pads a data row with no leading pipe but trailing pipe', () => {
+    // splitTableCells handles no-leading-pipe by starting at offset 0
+    const input = [
+      '| a | b | c |',
+      '|---|---|---|',
+      'data 1 | data 2 |',   // no leading |, missing last col
+    ].join('\n');
+    const result = repairTableColumns(input);
+    const { splitTableCells: stc } = require('../../skills/markdown-formatter/scripts/check-tables.js');
+    const cells = stc(result.split('\n')[2]);
+    assert.equal(cells.length, 3, 'data row should be padded to 3 cells');
+    assert.equal(cells[2], '', 'padded cell should be empty');
   });
 });

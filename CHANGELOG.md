@@ -2,7 +2,24 @@
 
 ## Unreleased
 
-- No changes yet.
+- Add `repairTableColumns` to `--fix`: auto-pads GFM table rows to match the
+  largest column count among header, delimiter, and data rows. Repairs the
+  "header has 2 columns but separator has 3" pattern (and similar) before oxfmt
+  formatting. The repair is conservative — adds empty trailing cells only, never
+  removes columns.
+- Add 11 unit tests covering structural valid, short data rows, short header,
+  short delimiter, the original 2-col/3-col-separator malformation, pipe-free
+  content, inline-code pipes, multi-row tables, header+delimiter-only tables,
+  adjacent independent tables, and data rows without a leading pipe.
+- Refactor `isWriteMode` from inline inversion of read-only flags to a named
+  function backed by a `READ_ONLY_FLAGS` set. Adding a new read-only flag now
+  requires only one addition to the set.
+- Document the no-trailing-pipe edge case in `repairTableColumns` as a comment.
+- Fix `package-lock.json` devDependency entry for oxfmt from caret (`^0.56.0`)
+  to exact (`0.56.0`), matching `package.json`.
+- Bump oxfmt from 0.54.0 to 0.56.0. Cross-config validation confirms all 9 spike
+  fixtures remain idempotent; 8 of 9 are byte-identical to source under the
+  production config. Update tested-maximum in `--doctor` to 0.56.0.
 
 ## v1.0.2
 

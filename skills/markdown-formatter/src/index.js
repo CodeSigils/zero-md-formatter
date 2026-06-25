@@ -26,12 +26,15 @@ const { readdirSync, statSync, existsSync, readFileSync, writeFileSync, copyFile
 const { join, resolve, extname, basename } = require("path");
 const { tmpdir } = require("os");
 
+const { splitTableCells, isDelimiterLine } = require('../scripts/check-tables.js');
+
 const SKILL_DIR = resolve(__dirname, "..");
 const OXFMT_CONFIG = join(SKILL_DIR, ".oxfmtrc.json");
 const NODE_RUNTIME_MIN_VERSION = 20;
-const OXFMT_MAX_VERSION = "0.54.0";
+const OXFMT_MAX_VERSION = "0.56.0";
 const LONG_FLAGS = new Set(["check", "fix", "all", "guard", "verify", "fences", "validate", "doctor", "dry-run", "help"]);
 const SHORT_FLAGS = { h: "help", n: "dry-run" };
+const READ_ONLY_FLAGS = new Set(["check", "validate", "fences", "verify", "doctor", "help", "dry-run"]);
 const MARKDOWN_EXTENSIONS = new Set([".md", ".markdown", ".mdx"]);
 
 function parseArgs(argv) {
@@ -223,6 +226,112 @@ function isMarkdownFile(filePath) {
   return MARKDOWN_EXTENSIONS.has(extname(filePath));
 }
 
+/**
+ * Repair table column-count mismatches in GFM tables.
+ *
+ * When a table's header, delimiter, or data rows disagree on column count,
+ * short rows are padded with empty trailing cells to match the largest
+ * declared column count. This ensures oxfmt receives structurally valid
+ * tables and can format them without triggering the structural guard.
+ *
+ * The repair is conservative: it only adds trailing empty cells, never
+ * removes columns or modifies cell content.
+ *
+ * @param {string} content File text.
+ * @returns {string} Repaired text, or original if no repairs needed.
+ */
+function repairTableColumns(content) {
+  const lines = content.split("\n");
+  const result = [...lines];
+  let modified = false;
+
+  for (let i = 0; i < lines.length - 1; i++) {
+    const header = lines[i];
+    const delimiter = lines[i + 1];
+
+    if (!delimiter || !isDelimiterLine(delimiter)) continue;
+
+    const headerCols = splitTableCells(header).length;
+    const delimiterCols = splitTableCells(delimiter).length;
+    const targetCols = Math.max(headerCols, delimiterCols);
+
+    if (targetCols <= 1) continue;            // not a real table
+    if (headerCols === delimiterCols) {
+      // Header and delimiter agree; check data rows
+      let anyShort = false;
+      let j = i + 2;
+      while (j < lines.length) {
+        const dataLine = lines[j];
+        const dataCols = splitTableCells(dataLine).length;
+        if (dataCols <= 1) break;
+        if (dataCols < targetCols) { anyShort = true; break; }
+        j++;
+      }
+      if (!anyShort) continue;
+    }
+
+    // Ensure header has targetCols
+    if (headerCols < targetCols) {
+      const missing = targetCols - headerCols;
+      result[i] = lines[i].replace(/\s*$/, "") + " |".repeat(missing) + " ";
+      modified = true;
+    }
+
+    // Ensure delimiter has targetCols
+    if (delimiterCols < targetCols) {
+      const missing = targetCols - delimiterCols;
+      result[i + 1] = lines[i + 1].replace(/\s*$/, "") + " --- |".repeat(missing);
+      modified = true;
+    }
+
+    // Pad short data rows
+    const targetColsFinal = Math.max(
+      splitTableCells(result[i]).length,
+      splitTableCells(result[i + 1]).length,
+    );
+    let j = i + 2;
+    while (j < lines.length) {
+      const dataLine = lines[j];
+      const dataCols = splitTableCells(dataLine).length;
+      if (dataCols <= 1) break;
+
+      if (dataCols < targetColsFinal) {
+        const missing = targetColsFinal - dataCols;
+        result[j] = lines[j].replace(/\s*$/, "") + " |".repeat(missing);
+        // Note: if the row is also missing a trailing pipe, splitTableCells
+        // will still report fewer cells after padding, because it strips
+        // outer pipes. In practice every well-formed GFM table row ends
+        // with |, so this is not expected in real inputs.
+        // If the line already ends with |, the first repeat adds a space before the cell
+        // which is fine — oxfmt normalizes widths.
+        modified = true;
+      }
+      j++;
+    }
+
+    i = j; // skip past the table body
+  }
+
+  return modified ? result.join("\n") : content;
+}
+
+/**
+ * Determine if the current args indicate a write mode (files will be modified).
+ *
+ * Write modes: --fix, --guard, or default (no explicit flag). All other flags
+ * are read-only. Adding a new read-only flag requires adding it to READ_ONLY_FLAGS.
+ *
+ * @param {object} args Parsed CLI arguments.
+ * @returns {boolean} True if the operation writes to files.
+ */
+function isWriteMode(args) {
+  if (args.fix || args.guard) return true;
+  for (const flag of READ_ONLY_FLAGS) {
+    if (args[flag]) return false;
+  }
+  return true; // no flags = write (default mode)
+}
+
 function findMarkdownFiles(dir) {
   const files = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -283,6 +392,16 @@ function runStructuralValidation(filePath, includeFencesOnly = false) {
 }
 
 function processFile(filePath, args) {
+  // Repair table column mismatches before any formatting or validation
+  // in write modes. This ensures oxfmt receives structurally valid tables.
+  if (isWriteMode(args)) {
+    const raw = readFileSync(filePath, "utf8");
+    const repaired = repairTableColumns(raw);
+    if (repaired !== raw) {
+      writeFileSync(filePath, repaired);
+    }
+  }
+
   if (args.fences) return runStructuralValidation(filePath, true);
   if (args.validate) return runStructuralValidation(filePath);
   if (args.verify) return runStructuralValidation(filePath) && runOxfmt(["--check", filePath]) && checkIdempotenceReadOnly(filePath);
@@ -367,4 +486,6 @@ module.exports = {
   resolveInputFiles,
   processFile,
   main,
+  repairTableColumns,
+  isWriteMode,
 };

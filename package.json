@@ -13,7 +13,7 @@
     "verify": "node skills/markdown-formatter/src/index.js --verify README.md AGENTS.md CHANGELOG.md plan.md skills/markdown-formatter/SKILL.md"
   },
   "devDependencies": {
-    "oxfmt": "0.54.0"
+    "oxfmt": "0.56.0"
   },
   "engines": {
     "node": ">=20"
