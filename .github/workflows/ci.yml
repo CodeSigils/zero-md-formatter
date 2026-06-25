@@ -102,9 +102,12 @@ jobs:
       run: npm run format:check
 
     - name: Fixture formatting check and idempotence
+      # Checks formatting correctness (oxfmt --check) and idempotence (two-pass
+      # format produces identical output) on temp copies of clean fixtures.
+      # Structural validation is covered by the structural test matrix job.
       run: |
-        TMP_DIR=$(mktemp -d)
         trap 'rm -rf "$TMP_DIR"' EXIT
+        TMP_DIR=$(mktemp -d)
         mkdir -p "$TMP_DIR/input/current" "$TMP_DIR/input/oxfmt-spike"
         cp -a test/fixtures/current/. "$TMP_DIR/input/current/"
         cp -a test/fixtures/oxfmt-spike/. "$TMP_DIR/input/oxfmt-spike/"
