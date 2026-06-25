@@ -1,5 +1,18 @@
 # Findings
 
+> **STALE — Historical research document (May–June 2026).** This file records the original oxfmt behavior observations
+> that informed the current [`agents-markdown-formatter`](https://github.com/CodeSigils/agents-markdown-formatter)
+> skill. The findings (oxfmt idempotence, fence/table behavior, config effects) are still accurate, but the recommended
+> architectures and guard-script names are outdated.
+>
+> Superseded content:
+>
+> - `check-fixture.js` — ESM prototype, removed; replaced by 4 production scripts
+> - `markdownlint-cli2` architectural references — markdownlint-cli2 is not part of the current skill
+> - Guard table below updated for current script set
+>
+> See `skills/markdown-formatter/SKILL.md` for the active architecture.
+
 ## 2026-05-19: Oxc repository reread
 
 Source: `https://github.com/oxc-project/oxc`
@@ -33,7 +46,8 @@ Repository tree findings relevant to this spike:
 - `apps/oxfmt/conformance/` contains formatter conformance fixtures and snapshots.
 - `crates/oxc_formatter/` contains formatter crate docs and changelog.
 - `crates/oxc_linter/` contains linter crate docs and changelog.
-- Formatter fixture names include embedded Markdown cases such as `apps/oxfmt/conformance/fixtures/edge-cases/md-in-js/`.
+- Formatter fixture names include embedded Markdown cases such as
+  `apps/oxfmt/conformance/fixtures/edge-cases/md-in-js/`.
 
 NPM package snapshot:
 
@@ -44,9 +58,11 @@ NPM package snapshot:
 
 Interpretation:
 
-- Oxlint is out of scope for Markdown policy enforcement because the project describes it as JavaScript and TypeScript linting.
+- Oxlint is out of scope for Markdown policy enforcement because the project describes it as JavaScript and TypeScript
+  linting.
 - Oxfmt is the interesting candidate because it is the formatter path.
-- The first spike should test Oxfmt behavior on simple Markdown, then on tables and fences, before touching copied Markdown lint skill fixtures.
+- The first spike should test Oxfmt behavior on simple Markdown, then on tables and fences, before touching copied
+  Markdown lint skill fixtures.
 
 ## 2026-05-19: Oxfmt configuration findings
 
@@ -61,8 +77,10 @@ Findings:
 - Oxfmt discovers `.oxfmtrc.json`, `.oxfmtrc.jsonc`, `oxfmt.config.ts`, and `vite.config.ts`.
 - `oxfmt --init` currently creates a minimal config with `ignorePatterns`.
 - Oxfmt config is formatter-oriented, closer to Prettier config than markdownlint config.
-- Relevant options include `tabWidth`, `useTabs`, `endOfLine`, `printWidth`, `proseWrap`, `insertFinalNewline`, `overrides`, and `ignorePatterns`.
-- Oxfmt config does not appear to encode markdownlint-style policy rules such as heading punctuation, table validation, or fence validation.
+- Relevant options include `tabWidth`, `useTabs`, `endOfLine`, `printWidth`, `proseWrap`, `insertFinalNewline`,
+  `overrides`, and `ignorePatterns`.
+- Oxfmt config does not appear to encode markdownlint-style policy rules such as heading punctuation, table validation,
+  or fence validation.
 
 Spike impact:
 
@@ -113,7 +131,8 @@ Maintainer response:
 
 - Oxfmt currently delegates Markdown formatting to Prettier.
 - A maintainer could not reproduce the report with `npx oxfmt@0.44.0 a.md`; their output stayed unchanged.
-- The issue is closed, but it remains a useful regression fixture because idempotence is mandatory for this repo's lint/fix path.
+- The issue is closed, but it remains a useful regression fixture because idempotence is mandatory for this repo's
+  lint/fix path.
 
 Spike impact:
 
@@ -148,8 +167,10 @@ Results:
 
 Implementation note:
 
-- `fixtures/work/**` cannot be listed in Oxfmt `ignorePatterns` if the harness passes copied work files to Oxfmt directly. Oxfmt exits with "Expected at least one target file" when an explicitly passed file is ignored.
-- Keep generated work/results paths ignored by Git instead: `fixtures/work/` and `fixtures/results/` are in `.gitignore`.
+- `fixtures/work/**` cannot be listed in Oxfmt `ignorePatterns` if the harness passes copied work files to Oxfmt
+  directly. Oxfmt exits with "Expected at least one target file" when an explicitly passed file is ignored.
+- Keep generated work/results paths ignored by Git instead: `fixtures/work/` and `fixtures/results/` are in
+  `.gitignore`.
 
 ## 2026-05-19: Escaped-pipe table fixture result
 
@@ -175,8 +196,11 @@ Results:
 
 Important observation:
 
-- A draft table row with an unescaped pipe inside an inline-code span, `` `alpha | beta` ``, was reformatted as an extra table column. For this spike, table fixtures that are meant to preserve literal pipe characters should escape those pipes explicitly as `\|`, including inside inline-code spans.
-- This reinforces that Oxfmt formatting is not a substitute for table safety validation. The production skill still needs explicit table validation if Oxfmt is ever used as a formatter supplement.
+- A draft table row with an unescaped pipe inside an inline-code span, `` `alpha | beta` ``, was reformatted as an extra
+  table column. For this spike, table fixtures that are meant to preserve literal pipe characters should escape those
+  pipes explicitly as `\|`, including inside inline-code spans.
+- This reinforces that Oxfmt formatting is not a substitute for table safety validation. The production skill still
+  needs explicit table validation if Oxfmt is ever used as a formatter supplement.
 
 ## 2026-05-19: Semantic-alignment table fixture result
 
@@ -229,8 +253,10 @@ Results:
 
 Important observation:
 
-- Oxfmt normalizes a fully empty fence from adjacent opener/closer lines into a fence containing one blank line between opener and closer.
-- That is probably acceptable for formatting, but a production safety wrapper should treat it as a content change worth recording. The existing custom fence validator remains relevant.
+- Oxfmt normalizes a fully empty fence from adjacent opener/closer lines into a fence containing one blank line between
+  opener and closer.
+- That is probably acceptable for formatting, but a production safety wrapper should treat it as a content change worth
+  recording. The existing custom fence validator remains relevant.
 
 ## 2026-05-19: Nested fenced-code fixture result
 
@@ -238,7 +264,8 @@ Scope:
 
 - Added `fixtures/source/fence-nested.md`.
 - Extended `test/check-fixture.test.js` so nested fenced-code blocks are part of the fixture harness.
-- Added an explicit `AGENTS.md` rule not to run the Hermes `markdown-lint` skill or wrapper in this spike repo, because it can mask Oxfmt behavior.
+- Added an explicit `AGENTS.md` rule not to run the Hermes `markdown-lint` skill or wrapper in this spike repo, because
+  it can mask Oxfmt behavior.
 
 Commands run:
 
@@ -267,7 +294,9 @@ Results:
 
 Important observation:
 
-- The tilde-to-backtick normalization is structurally valid and idempotent, but it is still a fence marker change. A guarded production wrapper should record or gate this kind of transformation if preserving author-chosen fence style matters.
+- The tilde-to-backtick normalization is structurally valid and idempotent, but it is still a fence marker change. A
+  guarded production wrapper should record or gate this kind of transformation if preserving author-chosen fence style
+  matters.
 
 ## 2026-05-19: Fence language-tag fixture result
 
@@ -292,8 +321,10 @@ npm run fmt:check -- planning.md
 Results:
 
 - The language-tagged fenced-code fixture was idempotent with `oxfmt@0.50.0`.
-- Oxfmt preserved common info strings such as `bash`, `javascript`, `json`, `js`, `TypeScript`, `python linenums="1"`, and `mermaid`.
-- Oxfmt formatted code inside recognized tagged fences, including JSON spacing and JavaScript semicolon/style normalization.
+- Oxfmt preserved common info strings such as `bash`, `javascript`, `json`, `js`, `TypeScript`, `python linenums="1"`,
+  and `mermaid`.
+- Oxfmt formatted code inside recognized tagged fences, including JSON spacing and JavaScript semicolon/style
+  normalization.
 - Oxfmt preserved the extra Python info string text after the language tag.
 - The generated first-pass output matched the formatted source fixture.
 - The Node test runner passed 6 fixture tests.
@@ -302,7 +333,9 @@ Results:
 
 Important observation:
 
-- Oxfmt is not only formatting Markdown container syntax here; it can also format fenced-code contents based on the language tag. That is useful for real docs, but it is a much bigger blast radius than a conservative Markdown-only formatter. A production wrapper should either explicitly allow code-fence content formatting or detect and gate it.
+- Oxfmt is not only formatting Markdown container syntax here; it can also format fenced-code contents based on the
+  language tag. That is useful for real docs, but it is a much bigger blast radius than a conservative Markdown-only
+  formatter. A production wrapper should either explicitly allow code-fence content formatting or detect and gate it.
 
 ## 2026-05-19: Safe-formatting basics fixture result
 
@@ -322,15 +355,20 @@ npm run fmt:check -- README.md AGENTS.md planning.md docs/direction.md docs/find
 Results:
 
 - The safe-formatting basics fixture was idempotent with `oxfmt@0.50.0`.
-- Oxfmt made **zero changes** to the source file: trailing spaces, blank lines around headings, and blank lines around lists were all preserved.
+- Oxfmt made **zero changes** to the source file: trailing spaces, blank lines around headings, and blank lines around
+  lists were all preserved.
 - The Node test runner passed 7 fixture tests.
 - `npm audit --audit-level=moderate` found 0 vulnerabilities.
 
 Important observation:
 
-- With `proseWrap: "preserve"`, Oxfmt is extremely conservative with intra-Markdown spacing. It did not strip trailing spaces, add blank lines around headings or lists, or normalize blank-line spacing.
-- This means the "safe formatting" problem space (trailing spaces, missing final newlines, heading/list spacing) is **not addressed by Oxfmt** in the current config. These would still need a dedicated formatter step or a markdownlint auto-fix pass.
-- The fixture intentionally tests patterns that the `planning.md` flagged as next steps. The finding is that Oxfmt leaves them alone — which is safe for idempotence, but means it does not help with these formatting tasks.
+- With `proseWrap: "preserve"`, Oxfmt is extremely conservative with intra-Markdown spacing. It did not strip trailing
+  spaces, add blank lines around headings or lists, or normalize blank-line spacing.
+- This means the "safe formatting" problem space (trailing spaces, missing final newlines, heading/list spacing) is
+  **not addressed by Oxfmt** in the current config. These would still need a dedicated formatter step or a markdownlint
+  auto-fix pass.
+- The fixture intentionally tests patterns that the `planning.md` flagged as next steps. The finding is that Oxfmt
+  leaves them alone — which is safe for idempotence, but means it does not help with these formatting tasks.
 
 ## 2026-05-19: Markdown-in-JS template fixture result
 
@@ -350,17 +388,21 @@ Results:
 
 - The markdown-in-js-template fixture was idempotent with `oxfmt@0.50.0`.
 - Oxfmt preserved the overall structure of the JavaScript template literal.
-- Oxfmt formatted the Markdown content inside the template literal (including list spacing, fence content, and table formatting).
+- Oxfmt formatted the Markdown content inside the template literal (including list spacing, fence content, and table
+  formatting).
 - The generated first-pass output matched the formatted source fixture.
 - The Node test runner passed 8 fixture tests.
 - `npm audit --audit-level=moderate` found 0 vulnerabilities.
 
 Important observation:
 
-- Oxfmt can format Markdown content embedded in JavaScript template literals, which demonstrates its capability to handle MDX-like syntax.
+- Oxfmt can format Markdown content embedded in JavaScript template literals, which demonstrates its capability to
+  handle MDX-like syntax.
 - This behavior is useful for real-world MDX files but represents a broader scope than pure Markdown formatting.
-- A production wrapper using Oxfmt for Markdown formatting should be aware that it will format content inside JavaScript template literals when used in MDX contexts.
-- For pure Markdown use cases, this extended capability may be undesirable and would require additional guarding or scoping.
+- A production wrapper using Oxfmt for Markdown formatting should be aware that it will format content inside JavaScript
+  template literals when used in MDX contexts.
+- For pure Markdown use cases, this extended capability may be undesirable and would require additional guarding or
+  scoping.
 
 ## 2026-05-19: Task lists fixture result
 
@@ -388,20 +430,28 @@ Results:
 
 Important observation:
 
-- Oxfmt preserves task list syntax correctly, treating `[ ]` and `[x]` as literal text to be preserved rather than interpreting them as structural Markdown elements.
-- This behavior is consistent with how Oxfmt treats other special Markdown syntax that should remain unchanged for safety.
-- Task lists represent another construct where Oxfmt's conservative approach helps maintain structural safety while still allowing formatting of content within the list items.
+- Oxfmt preserves task list syntax correctly, treating `[ ]` and `[x]` as literal text to be preserved rather than
+  interpreting them as structural Markdown elements.
+- This behavior is consistent with how Oxfmt treats other special Markdown syntax that should remain unchanged for
+  safety.
+- Task lists represent another construct where Oxfmt's conservative approach helps maintain structural safety while
+  still allowing formatting of content within the list items.
 
 ## 2026-05-19: Structural guard requirements for Oxfmt as Markdown formatting supplement
 
-Based on testing Oxfmt on 9 fixture types, identified three structural transformations requiring guardrails for safe use:
+Based on testing Oxfmt on 9 fixture types, identified three structural transformations requiring guardrails for safe
+use:
 
-**Reference:** Official Oxfmt conformance fixtures can be found at: https://api.github.com/repos/oxc-project/oxc/contents/apps/oxfmt/conformance/fixtures/edge-cases/
-**Important Note:** Oxfmt delegates ALL Markdown formatting to Prettier. There are NO standalone Markdown fixtures in Oxfmt's conformance directory. For table formatting behavior, see Prettier's test fixtures at tests/format/markdown/table/ in the Prettier repository.
+**Reference:** Official Oxfmt conformance fixtures can be found at:
+https://api.github.com/repos/oxc-project/oxc/contents/apps/oxfmt/conformance/fixtures/edge-cases/ **Important Note:**
+Oxfmt delegates ALL Markdown formatting to Prettier. There are NO standalone Markdown fixtures in Oxfmt's conformance
+directory. For table formatting behavior, see Prettier's test fixtures at tests/format/markdown/table/ in the Prettier
+repository.
 
 1. Fence marker normalization (tilde→backtick)
 2. Code content formatting inside tagged fences
-3. Table pipe handling that can alter structure (including the known Prettier/GFM spec violation where pipes inside inline code are treated as column delimiters)
+3. Table pipe handling that can alter structure (including the known Prettier/GFM spec violation where pipes inside
+   inline code are treated as column delimiters)
 
 Recommend minimal viable guardrails:
 
@@ -417,9 +467,14 @@ Suggested architecture:
 
 ### Relationship to Oxc's conformance fixtures
 
-Note that Oxc's conformance fixtures (like `apps/oxfmt/conformance/fixtures/edge-cases/md-in-js/`) test Oxfmt's _correctness_ when formatting Markdown embedded in JavaScript/TypeScript. Those fixtures ensure Oxfmt doesn't break when processing MDX-like syntax.
+Note that Oxc's conformance fixtures (like `apps/oxfmt/conformance/fixtures/edge-cases/md-in-js/`) test Oxfmt's
+_correctness_ when formatting Markdown embedded in JavaScript/TypeScript. Those fixtures ensure Oxfmt doesn't break when
+processing MDX-like syntax.
 
-Our fixtures test Oxfmt's _structural safety_ as a formatting supplement in a Markdown linting workflow. We're evaluating whether Oxfmt can be safely integrated without weakening the current lint skill's safety guarantees - requiring guardrails around fence preservation, table structure, and idempotence, even when Oxfmt itself is functioning correctly.
+Our fixtures test Oxfmt's _structural safety_ as a formatting supplement in a Markdown linting workflow. We're
+evaluating whether Oxfmt can be safely integrated without weakening the current lint skill's safety guarantees -
+requiring guardrails around fence preservation, table structure, and idempotence, even when Oxfmt itself is functioning
+correctly.
 
 ## 2026-05-20: Official Oxfmt docs and DeepWiki resource audit
 
@@ -446,21 +501,32 @@ Sources consulted:
 Findings:
 
 - Official Oxfmt docs explicitly list Markdown and MDX as supported formatter inputs.
-- Official CLI docs confirm `--write` is the default in-place formatting mode, `--check` is real check mode, and `--list-different` is available for changed-file reporting.
-- Oxfmt uses `.oxfmtrc.json` as the direct formatter config path; relying on a `prettier` field in `package.json` is unsupported.
-- Relevant defaults are `printWidth: 100`, `proseWrap: "preserve"`, `tabWidth: 2`, `endOfLine: "lf"`, `insertFinalNewline: true`, and `embeddedLanguageFormatting: "auto"`.
-- Unsupported or limited areas include nested `.editorconfig` files, Prettier plugins, and Prettier experimental options such as `experimentalTernaries` and `experimentalOperatorPosition`.
-- Embedded formatting can format JavaScript, TypeScript, CSS, and related code inside Markdown fences; this is useful, but increases blast radius for a conservative Markdown workflow.
-- DeepWiki is useful for architecture and source-file orientation, but official Oxfmt docs should be treated as the source of truth when current behavior or conformance claims conflict.
-- Oxc edge-case fixtures include `apps/oxfmt/conformance/fixtures/edge-cases/md-in-js/backtick-multibyte.js` and `nested-codeblock-in-list.js`, which are directly relevant to escaped backticks, multibyte content, and nested fenced-code-in-list behavior.
+- Official CLI docs confirm `--write` is the default in-place formatting mode, `--check` is real check mode, and
+  `--list-different` is available for changed-file reporting.
+- Oxfmt uses `.oxfmtrc.json` as the direct formatter config path; relying on a `prettier` field in `package.json` is
+  unsupported.
+- Relevant defaults are `printWidth: 100`, `proseWrap: "preserve"`, `tabWidth: 2`, `endOfLine: "lf"`,
+  `insertFinalNewline: true`, and `embeddedLanguageFormatting: "auto"`.
+- Unsupported or limited areas include nested `.editorconfig` files, Prettier plugins, and Prettier experimental options
+  such as `experimentalTernaries` and `experimentalOperatorPosition`.
+- Embedded formatting can format JavaScript, TypeScript, CSS, and related code inside Markdown fences; this is useful,
+  but increases blast radius for a conservative Markdown workflow.
+- DeepWiki is useful for architecture and source-file orientation, but official Oxfmt docs should be treated as the
+  source of truth when current behavior or conformance claims conflict.
+- Oxc edge-case fixtures include `apps/oxfmt/conformance/fixtures/edge-cases/md-in-js/backtick-multibyte.js` and
+  `nested-codeblock-in-list.js`, which are directly relevant to escaped backticks, multibyte content, and nested
+  fenced-code-in-list behavior.
 
 Implications:
 
 - Keep treating Oxfmt as a black-box formatter candidate guarded by idempotence and structural checks.
 - Production wrappers should call real `oxfmt --check` for check mode rather than approximating check behavior.
-- First-stage wrappers should resolve pinned local `node_modules/.bin/oxfmt`, then `PATH`, and fail with install instructions rather than auto-downloading binaries.
-- Structural guards remain mandatory around fence counts, fence delimiter style, fenced-code content drift, table column counts, and table pipe handling.
-- `embeddedLanguageFormatting: "auto"` should be an explicit product choice, not an accidental default; use `"off"` if the intended workflow is Markdown-container formatting without code-fence content formatting.
+- First-stage wrappers should resolve pinned local `node_modules/.bin/oxfmt`, then `PATH`, and fail with install
+  instructions rather than auto-downloading binaries.
+- Structural guards remain mandatory around fence counts, fence delimiter style, fenced-code content drift, table column
+  counts, and table pipe handling.
+- `embeddedLanguageFormatting: "auto"` should be an explicit product choice, not an accidental default; use `"off"` if
+  the intended workflow is Markdown-container formatting without code-fence content formatting.
 
 ## 2026-06-12: Pinned Oxfmt version bump 0.50.0 -> 0.54.0
 
@@ -494,7 +560,9 @@ Results:
 
 Important observation:
 
-- Oxfmt 0.54.0 produces **byte-identical output** to 0.50.0 on all 9 fixture types (HTML comments after lists, escaped-pipe tables, semantic-alignment tables, blank fences, nested fences, fence language tags, safe formatting basics, Markdown-in-JS templates, task lists).
+- Oxfmt 0.54.0 produces **byte-identical output** to 0.50.0 on all 9 fixture types (HTML comments after lists,
+  escaped-pipe tables, semantic-alignment tables, blank fences, nested fences, fence language tags, safe formatting
+  basics, Markdown-in-JS templates, task lists).
 - No regression in fence preservation, table structure, or idempotence behavior was detected.
 - The version bump is transparent for this spike's fixture suite. No guardrail changes or behavioral adjustments needed.
 - Historical findings recorded against 0.50.0 remain valid for 0.54.0.
@@ -502,7 +570,8 @@ Important observation:
 
 ## 2026-06-12: Cross-config test - production skill config against spike fixtures
 
-Tested all 9 spike fixtures with the production `markdown-formatter` skill's `.oxfmtrc.json` config to measure whether spike findings generalize to the production runtime.
+Tested all 9 spike fixtures with the production `markdown-formatter` skill's `.oxfmtrc.json` config to measure whether
+spike findings generalize to the production runtime.
 
 ### Production config tested
 
@@ -540,11 +609,21 @@ All three production guard scripts pass cleanly on the production-formatted outp
 | `check-structure.js --verify` | All 9 fixtures | All valid             |
 | `check-tables.js`             | All 9 fixtures | Exit 0, no violations |
 | `check-fences.js`             | All 9 fixtures | Exit 0, no violations |
+| `check-pipes.js`              | All 9 fixtures | Exit 0, no violations |
+
+_Note: `check-pipes.js` was added after this spike but passes on all spike fixtures._
 
 ### Implications
 
-- **`embeddedLanguageFormatting: "off"` works as expected.** Code-fence content is left unformatted, including tagged fences where `"auto"` mode previously reformatted code.
-- **`proseWrap: "always"` changes only one fixture** (safe-formatting-basics.md), and the change is a single list-continuation reflow - structurally valid and idempotent.
-- **No structural guards needed beyond what the production skill already implements.** The spike's 9 fixtures are a valid reference set for production verification.
-- **Fence and table safety is preserved** across both configs. The production config does not introduce structural drift that the guard scripts miss.
-- The spike's `safe-formatting-basics.md` fixture finding - "Oxfmt with `proseWrap: preserve` left trailing spaces, heading spacing, list spacing untouched" - does NOT generalize to the production config. With `proseWrap: "always"`, Oxfmt will reflow adjacent paragraph content, including list continuations without blank-line separators. A production codebase relying on this fixture's result should re-test with the actual target config.
+- **`embeddedLanguageFormatting: "off"` works as expected.** Code-fence content is left unformatted, including tagged
+  fences where `"auto"` mode previously reformatted code.
+- **`proseWrap: "always"` changes only one fixture** (safe-formatting-basics.md), and the change is a single
+  list-continuation reflow - structurally valid and idempotent.
+- **No structural guards needed beyond what the production skill already implements.** The spike's 9 fixtures are a
+  valid reference set for production verification.
+- **Fence and table safety is preserved** across both configs. The production config does not introduce structural drift
+  that the guard scripts miss.
+- The spike's `safe-formatting-basics.md` fixture finding - "Oxfmt with `proseWrap: preserve` left trailing spaces,
+  heading spacing, list spacing untouched" - does NOT generalize to the production config. With `proseWrap: "always"`,
+  Oxfmt will reflow adjacent paragraph content, including list continuations without blank-line separators. A production
+  codebase relying on this fixture's result should re-test with the actual target config.

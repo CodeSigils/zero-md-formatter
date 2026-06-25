@@ -1,23 +1,30 @@
 # Markdown Oxc Spike Plan
 
+> **STALE — Historical planning document (May 2026).** This spike repository was the precursor to the current
+> [`agents-markdown-formatter`](https://github.com/CodeSigils/agents-markdown-formatter) skill. All research goals were
+> achieved; the findings informed the production implementation.
+>
+> Outdated claims (paths, repo status, scripts) are marked inline. See `skills/markdown-formatter/SKILL.md` for the
+> active skill.
+
 ## Purpose
 
-Use this repo as a small, revisitable spike for testing whether Oxfmt can help with agent-authored Markdown formatting without weakening the current Markdown lint skill's safety guarantees.
+Use this repo as a small, revisitable spike for testing whether Oxfmt can help with agent-authored Markdown formatting
+without weakening safety guarantees.
 
-This is not a GitHub repo yet. Keep the local repo clean and reviewable before publishing anywhere.
+> **[STALE]** — The spike succeeded. The current production skill replaced this repository.
 
 ## Current direction
 
 The repo is exploring a lighter Markdown formatter or guarded Oxfmt wrapper, not a new Markdown linter.
 
-Stable framing lives in `docs/direction.md`.
+Stable framing lives in `direction.md` (this directory).
 
-Research findings live in `docs/findings.md`.
+Research findings live in `findings.md` (this directory).
 
 ## External Resources to be Aware off
 
-<https://oxc.rs/docs/guide/usage/formatter.html>
-<https://deepwiki.com/oxc-project/oxc>
+<https://oxc.rs/docs/guide/usage/formatter.html> <https://deepwiki.com/oxc-project/oxc>
 <https://deepwiki.com/search/can-oxc-format-markdown_fb17f280-b385-49a2-9b4f-5db626653b4e?mode=fast>
 <https://api.github.com/repos/oxc-project/oxc/contents/apps/oxfmt/conformance/fixtures/edge-cases>
 
@@ -30,7 +37,9 @@ Research findings live in `docs/findings.md`.
 - Keep `.oxfmtrc.json` formatter-only.
 - Every fixture must pass a second-pass idempotence check and structural guard checks.
 - Oxfmt is not a substitute for explicit table and fence safety validation.
-- Structural guardrails for fence preservation and table structure have been implemented in the check-fixture.js wrapper.
+- Structural guardrails for fence preservation and table structure were implemented in the spike's `check-fixture.js`
+  (removed from prior-art; superseded by production `check-structure.js`, `check-fences.js`, `check-tables.js`, and
+  `check-pipes.js`).
 
 ## Current workflow
 
@@ -59,11 +68,15 @@ For each fixture:
 
 ## Next steps
 
-1. Structural guardrails for fence preservation and table structure have been implemented in check-fixture.js wrapper.
-2. Benchmark Oxfmt with guards against the current Markdown lint skill pipeline for performance and safety comparison.
-3. Document the validated architecture in project documentation.
+> **[STALE]** — All spike goals completed. Next steps are handled by the production skill.
+
+1. Structural guardrails implemented in production scripts (see "Current conclusions" above).
+2. Benchmarking completed — the current skill uses oxfmt with structural guards.
+3. Architecture documented in `skills/markdown-formatter/SKILL.md`.
 
 ## Open questions
+
+> **[ALL RESOLVED]** — Questions answered by production experience.
 
 - Is Oxfmt too broad for a lightweight Markdown formatter?
 - Should this repo grow a tiny custom safe formatter for comparison?
