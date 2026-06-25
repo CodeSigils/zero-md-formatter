@@ -30,9 +30,10 @@ and JSX syntax validation inside MDX.
 MDX note: Oxfmt formats MDX as Markdown + JSX. This skill does not validate JSX syntax or MDX imports/exports;
 structural guards apply GFM rules to the Markdown content only.
 
-Runtime config: the CLI passes the bundled `.oxfmtrc.json` to `oxfmt` and disables nested config discovery. The bundled
-config wraps prose at 120 characters and sets `embeddedLanguageFormatting` to `"off"`, so code inside fenced blocks is
-left as-is.
+## Runtime config
+
+The CLI passes the bundled `.oxfmtrc.json` to `oxfmt` and disables nested config discovery. The bundled config wraps
+prose at 120 characters and sets `embeddedLanguageFormatting` to `"off"`, so code inside fenced blocks is left as-is.
 
 ## Why this skill exists
 
@@ -43,13 +44,12 @@ than left to formatter configuration alone.
 
 ## Usage
 
-From a source checkout:
-
 ```bash
-node skills/markdown-formatter/src/index.js [options] <path...>
+node <skill-dir>/src/index.js [options] <path...>
 ```
 
-From an installed payload, run the bundled `src/index.js` with Node from the installed skill directory.
+Where `<skill-dir>` is the repository checkout (`skills/markdown-formatter/`) or the installed Hermes payload
+(`~/.hermes/skills/markdown-formatter/`).
 
 ### Options
 
@@ -68,14 +68,9 @@ From an installed payload, run the bundled `src/index.js` with Node from the ins
 ## Prerequisites
 
 - `node` (>=20)
-- `oxfmt` (project-local binary or available in PATH)
+- `oxfmt` (available on PATH for installed skill, or local `node_modules/.bin/oxfmt` for development)
 
-The formatter checks for `oxfmt` in the active project and then in PATH, including `oxfmt.cmd`/`oxfmt.exe` shims on
-Windows. For installed Hermes use, make `oxfmt` available on PATH. If no binary is found, the tool exits without
-substituting another Markdown formatter.
-
-Run `--doctor` to check runtime readiness without modifying files. It exits 0 when Node.js, `oxfmt`, bundled config, and
-required runtime payload files are ready, and exits 1 with actionable guidance when a required runtime piece is missing.
+Run `--doctor` to verify runtime readiness (Node.js, oxfmt, config, payload).
 
 ## Fence policy
 
@@ -119,31 +114,19 @@ Agents should run the Markdown formatter after creating or editing Markdown file
 
 ## Examples
 
-Check formatting without changes:
-
-```bash
-node skills/markdown-formatter/src/index.js --verify --all docs/
-```
-
-Format files with rollback-safe structural guards:
+Format with rollback-safe structural guards:
 
 ```bash
 node skills/markdown-formatter/src/index.js --fix --guard README.md
 ```
 
-Verify formatting, idempotence, and structural integrity without writes:
+Validate structure without formatting:
 
 ```bash
-node skills/markdown-formatter/src/index.js --verify ch01.md ch02.md
+node skills/markdown-formatter/src/index.js --validate --all docs/
 ```
 
-Full validation workflow:
-
-```bash
-node skills/markdown-formatter/src/index.js --validate --all docs/ notes/
-```
-
-Diagnose installed runtime readiness:
+Diagnose installed readiness:
 
 ```bash
 node skills/markdown-formatter/src/index.js --doctor

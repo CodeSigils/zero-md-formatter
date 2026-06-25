@@ -67,7 +67,7 @@ Core behavior:
 - `--guard` snapshots structure before formatting, checks it after formatting, and restores the original file if
   structural drift is detected.
 - `--verify` checks structure, formatting, and idempotence without modifying files.
-- `--validate` checks structure, fences, and table columns without formatting.
+- `--validate` checks structure, fences, tables, and pipes without formatting.
 - `--doctor` checks runtime prerequisites and payload completeness without modifying files.
 - The shipped skill payload has no npm runtime dependencies.
 
@@ -105,13 +105,8 @@ formatting:
 - `check-pipes.js` detects adjacent double pipes (||) in table rows, which create phantom empty columns.
 - `--guard` restores the original file content if post-format structure changes.
 
-Fence policy is intentionally structural, not style-only:
-
-- Bare language-less fences are valid and allowed.
-- Whitespace-only fence info strings are invalid because they usually indicate accidental trailing whitespace.
-- Language info strings that start with whitespace are invalid because the intended language tag is ambiguous.
-- Unclosed fences are invalid.
-- Post-format fence count/style drift is invalid and is rolled back by `--fix --guard`.
+Fence policy is intentionally structural, not style-only. See the [shipped SKILL.md](skills/markdown-formatter/SKILL.md)
+for the complete policy (bare fences, hidden whitespace tags, closure, post-format drift).
 
 This keeps handling conservative: validate strongly, avoid semantic rewriting, and do not pretend the formatter
 configuration can express table- or fence-safety semantics it does not control.
@@ -144,7 +139,7 @@ CLI itself does not require Hermes at runtime.
 | `--guard`    | Enable structural pre/post guard; rolls back on drift and cleans snapshots  |
 | `--verify`   | Check formatting, idempotence, and structural integrity read-only           |
 | `--fences`   | Validate fence structure with `check-fences.js`                             |
-| `--validate` | Run structural, fence, and table validations                                |
+| `--validate` | Run structural, fence, table, and pipe validations                          |
 | `--doctor`   | Check Node.js, Oxfmt, config, and payload readiness without modifying files |
 | `--dry-run`  | Show what would be changed without writing files                            |
 | `--help`     | Display help message                                                        |
@@ -211,9 +206,8 @@ node ~/.hermes/skills/markdown-formatter/src/index.js --doctor
 `--doctor` exits 0 when Node.js, `oxfmt`, bundled config, and required runtime payload files are ready. It exits 1 with
 actionable guidance when a required runtime piece is missing.
 
-The formatter passes the bundled runtime config at `skills/markdown-formatter/.oxfmtrc.json` to `oxfmt` and disables
-nested config discovery for predictable installed behavior. The config wraps prose at 120 characters and leaves fenced
-code content unchanged.
+Runtime config (`printWidth: 120`, `embeddedLanguageFormatting: off`) is documented in the
+[shipped SKILL.md](skills/markdown-formatter/SKILL.md).
 
 ## Test structure
 

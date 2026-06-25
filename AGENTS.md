@@ -51,7 +51,8 @@ Do not use these as active validation for repository Markdown:
 Use the repository-owned validation path instead:
 
 ```bash
-node skills/markdown-formatter/src/index.js --check <file>
+node skills/markdown-formatter/src/index.js --check <file>    # formatting check
+node skills/markdown-formatter/src/index.js --validate <file>  # structural + fence + table + pipe checks
 ```
 
 If the repository-owned wrapper or Oxfmt is unavailable, report that repository validation is unavailable instead of
@@ -78,7 +79,7 @@ Before reporting completion, agents MUST check these files and directories for s
 - `scripts/check-consistency.js`
 - `scripts/staged-install-verify.sh`
 - `.github/workflows/ci.yml`
-- changelog or release notes, once added
+- `CHANGELOG.md`
 
 Agents MUST NOT:
 
