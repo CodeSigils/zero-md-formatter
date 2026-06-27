@@ -393,7 +393,15 @@ function runStructuralValidation(filePath, includeFencesOnly = false) {
   );
 }
 
+function runPipeSafetyPreflight(filePath) {
+  return runScript("check-pipes.js", filePath);
+}
+
 function processFile(filePath, args) {
+  if (!args.fences && !args.validate && !args.verify) {
+    if (!runPipeSafetyPreflight(filePath)) return false;
+  }
+
   // Repair table column mismatches before any formatting or validation
   // in write modes. This ensures oxfmt receives structurally valid tables.
   if (isWriteMode(args)) {

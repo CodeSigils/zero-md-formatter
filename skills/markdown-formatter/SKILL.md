@@ -1,7 +1,7 @@
 ---
 name: markdown-formatter
 description: "AI-agent-safe GFM and MDX Markdown formatter powered by oxfmt with structural guards"
-version: "1.0.4"
+version: "1.0.5"
 author: "CodeSigils"
 license: "MIT"
 compatibility: "hermes"
@@ -53,8 +53,8 @@ Where `<skill-dir>` is the repository checkout (`skills/markdown-formatter/`) or
 
 ### Options
 
-- `--check`: Check if files are formatted correctly (read-only, exits with code 1 if unformatted)
-- `--fix`: Format files in-place (default behavior)
+- `--check`: Check pipe safety and formatting (read-only, exits with code 1 if unsafe or unformatted)
+- `--fix`: Format files in-place after pipe-safety preflight (default behavior)
 - `--all`: Process directory inputs recursively; accepts multiple paths
 - `--guard`: Enable structural pre/post checks; rolls back file content on structural drift and cleans temporary
   snapshots
@@ -62,7 +62,7 @@ Where `<skill-dir>` is the repository checkout (`skills/markdown-formatter/`) or
 - `--fences`: Validate fenced code block language info strings
 - `--validate`: Run structural, fence, table, and pipe validations
 - `--doctor`: Check Node.js, Oxfmt, config, and payload readiness without modifying files
-- `--dry-run`: Show what would be changed without writing files
+- `--dry-run`: Run pipe-safety preflight, then show what would be changed without writing files
 - `--help`: Display help message
 
 ## Prerequisites
@@ -89,6 +89,8 @@ Table and pipe safety is enforced by guard scripts alongside the formatter:
 - `check-tables.js` validates GFM table column counts and pipe consistency.
 - `check-pipes.js` detects adjacent double-pipe artifacts (`||`) that create phantom empty columns — leading (phantom
   first cell), internal (empty cell), and trailing (phantom last cell). Ignores escaped pipes and inline code spans.
+- `--check`, `--fix`, `--dry-run`, and `--guard` run pipe-safety preflight before invoking oxfmt so malformed tables are
+  refused before the formatter can rewrite them.
 
 ## Supported file types
 
@@ -108,8 +110,9 @@ Agents should run the Markdown formatter after creating or editing Markdown file
 
 ## Severity levels
 
-- Blocking violations: structural issues detected by `--guard`, `--verify`, or `--validate` exit with code 1. In write
-  mode, `--fix --guard` restores the original file content when post-format structural drift is detected.
+- Blocking violations: structural issues detected by `--guard`, `--verify`, or `--validate` exit with code 1. Adjacent
+  table-pipe violations also fail `--check`, `--fix`, and `--dry-run` before formatting begins. In write mode,
+  `--fix --guard` restores the original file content when post-format structural drift is detected.
 - Formatting differences: corrected by `--fix`; reported with a non-zero exit by `--check` or `--verify`.
 
 ## Examples

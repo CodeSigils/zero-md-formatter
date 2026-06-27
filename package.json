@@ -1,6 +1,6 @@
 {
   "name": "agents-markdown-formatter",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "AI-agent-safe GFM and MDX Markdown formatter powered by Oxc oxfmt with structural guards",
   "private": true,
   "scripts": {

@@ -51,7 +51,7 @@ Do not use these as active validation for repository Markdown:
 Use the repository-owned validation path instead:
 
 ```bash
-node skills/markdown-formatter/src/index.js --check <file>    # formatting check
+node skills/markdown-formatter/src/index.js --check <file>    # pipe-safety + formatting check
 node skills/markdown-formatter/src/index.js --validate <file>  # structural + fence + table + pipe checks
 ```
 

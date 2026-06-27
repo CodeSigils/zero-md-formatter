@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## v1.0.5
+
+- Run `check-pipes.js` as a preflight for `--check`, `--fix`, `--dry-run`, and `--guard` before invoking `oxfmt`. This
+  refuses adjacent-pipe table artifacts before the formatter can rewrite malformed tables.
+- Add CLI integration regressions proving plain `--fix`, plain `--dry-run`, and plain `--check` fail double-pipe tables
+  read-only/in-place safely instead of reporting or applying a formatter rewrite.
+
 ## v1.0.4
 
 - Add `check-pipes.js`: detects adjacent double-pipe artifacts (`||`) in GFM table rows. Leading `||` creates phantom

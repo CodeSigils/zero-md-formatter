@@ -124,6 +124,7 @@ FIXTURE_DIR="$(mktemp -d)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
 VALID_FIXTURE="${FIXTURE_DIR}/valid.md"
 GUARD_FIXTURE="${FIXTURE_DIR}/guard.md"
+DOUBLE_PIPE_FIXTURE="${FIXTURE_DIR}/double-pipe.md"
 cat > "$VALID_FIXTURE" <<'EOF'
 # Staged Fixture
 
@@ -136,6 +137,13 @@ console.log("ok");
 ```
 EOF
 cp "$VALID_FIXTURE" "$GUARD_FIXTURE"
+cat > "$DOUBLE_PIPE_FIXTURE" <<'EOF'
+# Double Pipe Fixture
+
+|| A | B ||
+|| --- | --- ||
+|| 1 | 2 ||
+EOF
 
 if ./skills/markdown-formatter/src/index.js --help > /dev/null 2>&1; then
     echo "✓ Staged index.js --help executed successfully"
@@ -171,6 +179,18 @@ else
     echo "❌ FAILED: Staged --check failed"
     exit 1
 fi
+
+if ./skills/markdown-formatter/src/index.js --fix "$DOUBLE_PIPE_FIXTURE" > "$FIXTURE_DIR/double-pipe.out" 2>&1; then
+    echo "❌ FAILED: Staged --fix unexpectedly accepted adjacent table pipes"
+    cat "$FIXTURE_DIR/double-pipe.out"
+    exit 1
+fi
+if ! grep -q "Leading double pipe" "$FIXTURE_DIR/double-pipe.out"; then
+    echo "❌ FAILED: Staged --fix did not report adjacent table pipes"
+    cat "$FIXTURE_DIR/double-pipe.out"
+    exit 1
+fi
+echo "✓ Staged --fix refuses adjacent table pipes before formatting"
 
 if ./skills/markdown-formatter/src/index.js --guard "$GUARD_FIXTURE"; then
     echo "✓ Staged --guard succeeded"

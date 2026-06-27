@@ -1,6 +1,6 @@
 # Agents Markdown Formatter
 
-[![v1.0.4](https://img.shields.io/badge/version-1.0.4-blue.svg)](skills/markdown-formatter/SKILL.md)
+[![v1.0.5](https://img.shields.io/badge/version-1.0.5-blue.svg)](skills/markdown-formatter/SKILL.md)
 [![CI](https://github.com/CodeSigils/agents-markdown-formatter/actions/workflows/ci.yml/badge.svg)](https://github.com/CodeSigils/agents-markdown-formatter/actions/workflows/ci.yml)
 
 Deterministic Markdown formatting for AI-agent-authored docs.
@@ -68,6 +68,7 @@ Core behavior:
   structural drift is detected.
 - `--verify` checks structure, formatting, and idempotence without modifying files.
 - `--validate` checks structure, fences, tables, and pipes without formatting.
+- `--check`, `--fix`, `--dry-run`, and `--guard` refuse adjacent-pipe table artifacts before invoking `oxfmt`.
 - `--doctor` checks runtime prerequisites and payload completeness without modifying files.
 - The shipped skill payload has no npm runtime dependencies.
 
@@ -103,6 +104,8 @@ formatting:
 - `check-fences.js` validates fence closure and accidental malformed info strings.
 - `check-structure.js` snapshots fences and tables before formatting, then compares them afterward.
 - `check-pipes.js` detects adjacent double pipes (||) in table rows, which create phantom empty columns.
+- `--check`, `--fix`, `--dry-run`, and `--guard` run `check-pipes.js` before `oxfmt`, so malformed tables fail before
+  the formatter can rewrite them.
 - `--guard` restores the original file content if post-format structure changes.
 
 Fence policy is intentionally structural, not style-only. See the [shipped SKILL.md](skills/markdown-formatter/SKILL.md)
@@ -133,15 +136,15 @@ CLI itself does not require Hermes at runtime.
 
 | Flag         | Description                                                                 |
 | ------------ | --------------------------------------------------------------------------- |
-| `--check`    | Check formatting without writing changes; exits 1 if unformatted            |
-| `--fix`      | Format files in-place; default behavior                                     |
+| `--check`    | Check pipe safety and formatting without writing changes                    |
+| `--fix`      | Format files in-place after pipe-safety preflight; default behavior         |
 | `--all`      | Process directory inputs recursively; accepts multiple paths                |
 | `--guard`    | Enable structural pre/post guard; rolls back on drift and cleans snapshots  |
 | `--verify`   | Check formatting, idempotence, and structural integrity read-only           |
 | `--fences`   | Validate fence structure with `check-fences.js`                             |
 | `--validate` | Run structural, fence, table, and pipe validations                          |
 | `--doctor`   | Check Node.js, Oxfmt, config, and payload readiness without modifying files |
-| `--dry-run`  | Show what would be changed without writing files                            |
+| `--dry-run`  | Run pipe-safety preflight, then show what would change without writing      |
 | `--help`     | Display help message                                                        |
 
 ## Install instructions
@@ -230,7 +233,7 @@ The skill follows a strict runtime allowlist:
 
 ## Release posture
 
-`v1.0.4` is the current runtime release. `main` may contain maintenance commits after that tag for CI, checks, or
+`v1.0.5` is the current runtime release. `main` may contain maintenance commits after that tag for CI, checks, or
 repository documentation, but those changes should not be treated as a runtime release unless files under
 `skills/markdown-formatter/` change and the staged payload is verified again.
 

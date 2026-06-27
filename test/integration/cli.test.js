@@ -43,6 +43,58 @@ describe('markdown formatter CLI integration', () => {
     assert.match(result.stderr, /row 1 has 4 cols but header has 2|Table row/);
   });
 
+  it('--fix refuses double-pipe tables before oxfmt can rewrite them', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'markdown-formatter-double-pipe-fix-'));
+    const file = join(dir, 'double-pipe.md');
+    try {
+      const original = '# Double pipe\n\n|| A | B ||\n|| :- | :- ||\n|| 1 | 2 ||\n';
+      writeFileSync(file, original);
+
+      const result = runCli(['--fix', file]);
+
+      assert.notStrictEqual(result.status, 0);
+      assert.match(result.stdout + result.stderr, /Leading double pipe/);
+      assert.equal(readFileSync(file, 'utf8'), original);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('--dry-run fails double-pipe tables instead of reporting a safe format preview', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'markdown-formatter-double-pipe-dry-run-'));
+    const file = join(dir, 'double-pipe.md');
+    try {
+      const original = '# Double pipe\n\n|| A | B ||\n|| :- | :- ||\n|| 1 | 2 ||\n';
+      writeFileSync(file, original);
+
+      const result = runCli(['--dry-run', file]);
+
+      assert.notStrictEqual(result.status, 0);
+      assert.match(result.stdout + result.stderr, /Leading double pipe/);
+      assert.doesNotMatch(result.stdout + result.stderr, /Would format/);
+      assert.equal(readFileSync(file, 'utf8'), original);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('--check fails double-pipe tables before formatting checks', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'markdown-formatter-double-pipe-check-'));
+    const file = join(dir, 'double-pipe.md');
+    try {
+      const original = '# Double pipe\n\n|| A | B ||\n|| :- | :- ||\n|| 1 | 2 ||\n';
+      writeFileSync(file, original);
+
+      const result = runCli(['--check', file]);
+
+      assert.notStrictEqual(result.status, 0);
+      assert.match(result.stdout + result.stderr, /Leading double pipe/);
+      assert.equal(readFileSync(file, 'utf8'), original);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('--verify is read-only and fails on unformatted files', () => {
     const dir = mkdtempSync(join(tmpdir(), 'markdown-formatter-verify-'));
     const file = join(dir, 'dirty.md');
