@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Clarify that fenced code block contents are ignored by table validation, table snapshots, pipe-safety checks, and
+  automatic table repair.
+- Qualify the agent stale-information checklist so `references/**` is only required when that directory exists.
+
 ## v1.0.7
 
 - Make table validation, structural snapshots, pipe-safety checks, and automatic table repair ignore table-shaped text

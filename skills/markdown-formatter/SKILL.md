@@ -89,6 +89,8 @@ Table and pipe safety is enforced by guard scripts alongside the formatter:
 - `check-tables.js` validates GFM table column counts and pipe consistency.
 - `check-pipes.js` detects adjacent double-pipe artifacts (`||`) that create phantom empty columns — leading (phantom
   first cell), internal (empty cell), and trailing (phantom last cell). Ignores escaped pipes and inline code spans.
+- Table validation, structural table snapshots, pipe-safety checks, and automatic table repair ignore table-shaped text
+  inside fenced code blocks.
 - `--check`, `--fix`, `--dry-run`, and `--guard` run pipe-safety preflight before invoking oxfmt so malformed tables are
   refused before the formatter can rewrite them.
 

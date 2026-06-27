@@ -104,6 +104,8 @@ formatting:
 - `check-fences.js` validates fence closure and accidental malformed info strings.
 - `check-structure.js` snapshots fences and tables before formatting, then compares them afterward.
 - `check-pipes.js` detects adjacent double pipes (||) in table rows, which create phantom empty columns.
+- Table validation, structural table snapshots, pipe-safety checks, and automatic table repair ignore table-shaped text
+  inside fenced code blocks.
 - `--check`, `--fix`, `--dry-run`, and `--guard` run `check-pipes.js` before `oxfmt`, so malformed tables fail before
   the formatter can rewrite them.
 - `--guard` restores the original file content if post-format structure changes.

@@ -74,7 +74,7 @@ Before reporting completion, agents MUST check these files and directories for s
 - `README.md`
 - `AGENTS.md`
 - `skills/markdown-formatter/**`
-- `references/**`
+- `references/**` if present
 - `test/**`
 - `scripts/check-consistency.js`
 - `scripts/staged-install-verify.sh`
