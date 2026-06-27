@@ -35,30 +35,54 @@ function detectDoublePipes(content) {
     const line = lines[i];
     if (!line.includes("||")) continue;
 
-    // Must look like a table row (leading pipe after optional whitespace)
-    if (!line.trim().startsWith("|")) continue;
-
-    // Must have at least 2 pipe chars total to be a table row
+    // Must look like a pipe table row. Leading-pipe rows need at least one
+    // separator pair; no-leading-pipe GFM rows need more pipe structure so
+    // prose like "some || text" is not treated as a table.
+    const trimmed = line.trim();
     const pipeCount = (line.match(/\|/g) || []).length;
-    if (pipeCount < 2) continue;
+    const tableLike = trimmed.startsWith("|") ? pipeCount >= 2 : pipeCount >= 3;
+    if (!tableLike) continue;
 
-    // Strip escaped pipes so \\|\\| doesn't false-positive
-    const plainLine = line.replace(/\\\|/g, "");
-    const adjPos = plainLine.indexOf("||");
+    let escaped = false;
+    let codeSpanTicks = 0;
+    let adjPos = -1;
+    for (let pos = 0; pos < line.length - 1; pos++) {
+      const ch = line[pos];
+
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+
+      if (ch === "\\") {
+        escaped = true;
+        continue;
+      }
+
+      if (ch === "`") {
+        let ticks = 1;
+        while (pos + 1 < line.length && line[pos + 1] === "`") {
+          ticks++;
+          pos++;
+        }
+        codeSpanTicks = codeSpanTicks === ticks ? 0 : (codeSpanTicks || ticks);
+        continue;
+      }
+
+      if (ch === "|" && line[pos + 1] === "|" && codeSpanTicks === 0) {
+        adjPos = pos;
+        break;
+      }
+    }
     if (adjPos === -1) continue;
-
-    // Check if adjacent pipes are inside an inline code span
-    const before = plainLine.slice(0, adjPos);
-    const backtickCount = (before.match(/`/g) || []).length;
-    if (backtickCount % 2 === 1) continue;
 
     issues.push({
       lineIndex: i,
       line,
       detail:
-        adjPos === 0
+        trimmed.startsWith("||")
           ? "Leading double pipe (phantom empty first column)"
-          : adjPos >= line.length - 2
+          : trimmed.endsWith("||")
             ? "Trailing double pipe (phantom empty last column)"
             : "Adjacent double pipe (possible empty cell or merge artifact)",
     });

@@ -29,6 +29,12 @@ const CHECKS = [
   { name: 'check-tables', args: [] },
   { name: 'check-pipes', args: [] },
 ];
+const EXPECTED_VIOLATION_CHECKS = new Map([
+  ['test/fixtures/violations/fence-mismatch.md', ['check-structure', 'check-fences']],
+  ['test/fixtures/violations/fence-untitled.md', ['check-fences']],
+  ['test/fixtures/violations/table-column-drift.md', ['check-structure', 'check-tables']],
+  ['test/fixtures/violations/table-double-pipe.md', ['check-pipes']],
+]);
 
 function collectFiles(targets) {
   const files = [];
@@ -84,8 +90,21 @@ for (const file of files) {
 
   if (isViolationFixture(file)) {
     violationCount++;
-    if (results.every((result) => result.ok)) {
-      console.error(`FAIL: violation fixture passed all checks: ${rel}`);
+    const expectedChecks = EXPECTED_VIOLATION_CHECKS.get(rel);
+    if (!expectedChecks) {
+      console.error(`FAIL: violation fixture has no expected check mapping: ${rel}`);
+      failed = true;
+      continue;
+    }
+    const missingFailures = expectedChecks.filter((checkName) => {
+      const result = results.find((r) => r.check.name === checkName);
+      return !result || result.ok;
+    });
+    if (missingFailures.length > 0) {
+      console.error(`FAIL: violation fixture did not fail expected checks: ${rel} (${missingFailures.join(', ')})`);
+      for (const result of results) {
+        if (!result.ok && result.stderr) process.stderr.write(result.stderr);
+      }
       failed = true;
     } else {
       console.log(`PASS: violation detected: ${rel}`);

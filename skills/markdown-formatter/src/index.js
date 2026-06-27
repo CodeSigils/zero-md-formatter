@@ -5,15 +5,15 @@
  * Usage: node src/index.js [options] <path...>
  *
  * Options:
- *   --check      Read-only format check (exit 0 if clean)
- *   --fix        Apply formatting (default)
+ *   --check      Read-only pipe-safety and format check (exit 0 if clean)
+ *   --fix        Apply formatting after pipe-safety preflight (default)
  *   --all        Process directories recursively
  *   --guard      Pre/post structural check; rollback writes on drift; clean snapshots
  *   --verify     Run formatting, idempotence, and structural validation checks without modifying files
  *   --fences     Validate fenced code blocks
  *   --validate   Run all structural validations
  *   --doctor     Check runtime prerequisites without modifying files
- *   --dry-run    Preview changes
+ *   --dry-run    Run pipe-safety preflight, then preview changes
  *   --help       Show this help
  *
  * Prerequisites: oxfmt on PATH or in node_modules/.bin/
@@ -66,15 +66,15 @@ Markdown Formatter CLI
 Usage: node src/index.js [options] <path...>
 
 Options:
-  --check           Read-only format check (exit 0 if clean)
-  --fix             Apply formatting (default)
+  --check           Read-only pipe-safety and format check (exit 0 if clean)
+  --fix             Apply formatting after pipe-safety preflight (default)
   --all             Process directories recursively
   --guard           Pre/post structural check; rollback writes on drift; clean snapshots
   --verify          Run formatting, idempotence, and structural validation checks without modifying files
   --fences          Validate fenced code blocks
   --validate        Run all structural validations
   --doctor          Check runtime prerequisites without modifying files
-  --dry-run, -n     Preview changes
+  --dry-run, -n     Run pipe-safety preflight, then preview changes
   --help, -h        Show this help
 
 Prerequisites: oxfmt on PATH or in node_modules/.bin/

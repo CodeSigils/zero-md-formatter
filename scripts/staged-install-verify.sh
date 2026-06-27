@@ -63,7 +63,7 @@ echo ""
 echo "Staged file list with sizes:"
 echo "============================"
 # Find all files in staging directory and show sizes
-find "$STAGE_DIR" -type f | sort | while read -r file; do
+find "$STAGE_DIR" -type f | sort | while IFS= read -r file; do
     rel_path="${file#"$STAGE_DIR"/}"
     size=$(du -h "$file" | cut -f1)
     printf "%-8s %s\n" "$size" "$rel_path"

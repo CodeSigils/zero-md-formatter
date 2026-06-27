@@ -76,6 +76,7 @@ const PLAN_EXPECTED_REPO_SHAPE = new Set([
   "skills/markdown-formatter/scripts/check-fences.js",
   "skills/markdown-formatter/scripts/check-structure.js",
   "skills/markdown-formatter/scripts/check-tables.js",
+  "skills/markdown-formatter/scripts/check-pipes.js",
   "test/",
 ]);
 
@@ -150,6 +151,7 @@ const ACTIVE_DRIFT_CHECK_PATTERNS = [
   "skills/markdown-formatter/scripts/check-structure.js",
   "skills/markdown-formatter/scripts/check-fences.js",
   "skills/markdown-formatter/scripts/check-tables.js",
+  "skills/markdown-formatter/scripts/check-pipes.js",
   "README.md",
   "AGENTS.md",
   "CHANGELOG.md",

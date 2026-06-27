@@ -10,8 +10,8 @@
 #
 # What it does:
 #   1. Creates an annotated git tag v<VERSION> from package.json version
-#   2. Creates a GitHub Release with the corresponding CHANGELOG section as body
-#   3. Pushes commit and tag to origin/main
+#   2. Pushes HEAD and the annotated tag to origin/main
+#   3. Creates a GitHub Release with the corresponding CHANGELOG section as body
 #
 # Usage:
 #   bash scripts/release.sh
@@ -44,10 +44,14 @@ if [[ -n "$(git status --porcelain)" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Precondition 2: tag doesn't already exist
+# Precondition 2: tag doesn't already exist locally or remotely
 # ---------------------------------------------------------------------------
 if git rev-parse "${TAG}" >/dev/null 2>&1; then
   echo "ERROR: Tag ${TAG} already exists locally." >&2
+  exit 1
+fi
+if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
+  echo "ERROR: Tag ${TAG} already exists on origin." >&2
   exit 1
 fi
 
@@ -85,6 +89,17 @@ echo "Creating annotated tag ${TAG} ..."
 git tag -a "${TAG}" -m "${TAG}"
 
 # ---------------------------------------------------------------------------
+# Push commit and tag before creating the GitHub Release.
+# gh release create does not publish local annotated tags; with --verify-tag it
+# intentionally aborts unless the tag already exists on the remote.
+# ---------------------------------------------------------------------------
+echo "Pushing HEAD to origin/main ..."
+git push origin HEAD:main
+
+echo "Pushing tag ${TAG} ..."
+git push origin "${TAG}"
+
+# ---------------------------------------------------------------------------
 # Extract CHANGELOG body for this version
 # ---------------------------------------------------------------------------
 BODY_FILE="$(mktemp)"
@@ -104,6 +119,7 @@ fi
 # ---------------------------------------------------------------------------
 echo "Creating GitHub Release ${TAG} ..."
 gh release create "${TAG}" \
+  --verify-tag \
   --title "${TAG}" \
   --notes-file "${BODY_FILE}"
 

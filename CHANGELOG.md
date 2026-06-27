@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## v1.0.6
+
+- Tighten `check-pipes.js` so it scans all adjacent-pipe occurrences on a table row, catching structural `||` even when
+  an earlier `||` appears inside inline code.
+- Detect adjacent-pipe artifacts in no-leading-pipe GFM table rows when the row has enough pipe structure to be
+  table-like.
+- Make `scripts/release.sh` push HEAD and the annotated tag before creating the GitHub Release with `--verify-tag`.
+- Align CLI help, consistency checks, staged-install shell robustness, and release documentation with current behavior.
+
 ## v1.0.5
 
 - Run `check-pipes.js` as a preflight for `--check`, `--fix`, `--dry-run`, and `--guard` before invoking `oxfmt`. This

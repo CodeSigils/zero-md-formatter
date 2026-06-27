@@ -1,6 +1,6 @@
 # Agents Markdown Formatter
 
-[![v1.0.5](https://img.shields.io/badge/version-1.0.5-blue.svg)](skills/markdown-formatter/SKILL.md)
+[![v1.0.6](https://img.shields.io/badge/version-1.0.6-blue.svg)](skills/markdown-formatter/SKILL.md)
 [![CI](https://github.com/CodeSigils/agents-markdown-formatter/actions/workflows/ci.yml/badge.svg)](https://github.com/CodeSigils/agents-markdown-formatter/actions/workflows/ci.yml)
 
 Deterministic Markdown formatting for AI-agent-authored docs.
@@ -233,7 +233,7 @@ The skill follows a strict runtime allowlist:
 
 ## Release posture
 
-`v1.0.5` is the current runtime release. `main` may contain maintenance commits after that tag for CI, checks, or
+`v1.0.6` is the current runtime release. `main` may contain maintenance commits after that tag for CI, checks, or
 repository documentation, but those changes should not be treated as a runtime release unless files under
 `skills/markdown-formatter/` change and the staged payload is verified again.
 
@@ -260,9 +260,9 @@ Recommended release practice:
    ```
 
    The script reads the version from `package.json`, validates preconditions (clean tree, CHANGELOG section exists, tag
-   is new, `gh` authenticated), creates an annotated tag, and publishes the GitHub Release with the matching CHANGELOG
-   section as body. If the release must be aborted after tagging, run `git tag -d vX.Y.Z` to remove the local tag before
-   fixing.
+   is new locally and remotely, `gh` authenticated), creates an annotated tag, pushes HEAD and the tag to origin, then
+   publishes the GitHub Release with the matching CHANGELOG section as body. If the release must be aborted after
+   tagging, run `git tag -d vX.Y.Z` locally and delete the remote tag before fixing.
 
 6. Verify CI passes for the tag push.
 7. Avoid expanding scope during release cleanup; use follow-up issues for new Markdown dialects, embedded-code

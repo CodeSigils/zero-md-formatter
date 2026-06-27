@@ -33,6 +33,20 @@ describe("check-pipes.js unit tests", () => {
     assert.equal(issues.length, 0);
   });
 
+  it("detects structural double pipes after ignored inline-code double pipes", () => {
+    const issues = detectDoublePipes("| code | `x || y` || real | value |");
+
+    assert.equal(issues.length, 1);
+    assert.match(issues[0].detail, /Adjacent double pipe/);
+  });
+
+  it("detects double pipes in GFM table rows without leading pipes", () => {
+    const issues = detectDoublePipes("a || b | c");
+
+    assert.equal(issues.length, 1);
+    assert.match(issues[0].detail, /Adjacent double pipe/);
+  });
+
   it("passes valid tables without double pipes", () => {
     const issues = detectDoublePipes(
       "| Name | Age | City |\n| ---- | --- | ---- |\n| A | 1 | NYC |\n",

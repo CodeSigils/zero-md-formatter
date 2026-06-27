@@ -1,7 +1,7 @@
 ---
 name: markdown-formatter
 description: "AI-agent-safe GFM and MDX Markdown formatter powered by oxfmt with structural guards"
-version: "1.0.5"
+version: "1.0.6"
 author: "CodeSigils"
 license: "MIT"
 compatibility: "hermes"
