@@ -6,7 +6,7 @@ set -euo pipefail
 
 # Define source and staging directories
 SOURCE_DIR="${PWD}"
-STAGE_DIR="${SOURCE_DIR}/test/staged-artifact"
+STAGE_DIR="${SOURCE_DIR}/staged-install"
 
 # Define the exact runtime allowlist (what should be copied)
 RUNTIME_ALLOWLIST=(

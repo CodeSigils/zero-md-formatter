@@ -2,17 +2,16 @@
 
 ## Unreleased
 
-- **BREAKING: All CLI modes now BLOCK on adjacent pipes (`||`) in tables instead of passing through.**
-  oxfmt cannot safely handle double-pipe GFM tables — it expands column count and corrupts the
-  entire table. The previous pass-through behavior (diagnostic-only, exit 0) let oxfmt reach
-  corrupted tables. Now `--check`, `--fix`, `--dry-run`, `--guard`, and `--validate` all fail
-  with a clear error before oxfmt is invoked. The `--fences` mode (code fences only) is unaffected.
+- **BREAKING: All CLI modes now BLOCK on adjacent pipes (`||`) in tables instead of passing through.** oxfmt cannot
+  safely handle double-pipe GFM tables — it expands column count and corrupts the entire table. The previous
+  pass-through behavior (diagnostic-only, exit 0) let oxfmt reach corrupted tables. Now `--check`, `--fix`, `--dry-run`,
+  `--guard`, and `--validate` all fail with a clear error before oxfmt is invoked. The `--fences` mode (code fences
+  only) is unaffected.
 - Add `hasAdjacentPipes()` export to `check-pipes.js` for programmatic use.
 - Add `test/fixtures/violations/table-adjacent-pipes.md` — violations fixture for || patterns.
 - **BREAKING: check-pipes.js now treats `||` as valid GFM empty-cell syntax (exit 0, diagnostic-only).** Function
   renamed `detectDoublePipes` → `detectAdjacentPipes`. Diagnostic messages reframed from "phantom empty column" to
-  "valid GFM empty cell".
-  _This entry superseded: blocking is now done by index.js before oxfmt runs._
+  "valid GFM empty cell". _This entry superseded: blocking is now done by index.js before oxfmt runs._
 - Move `table-double-pipe.md` from violations/ to pipe-safety/ (renamed `table-empty-cells.md`). Not oxfmt-clean —
   tested by structural guards only, excluded from CI format check.
 - Update `scripts/check-all.js`: remove `check-pipes` from expected violations for double-pipe fixture.

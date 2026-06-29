@@ -243,13 +243,13 @@ if (pkgJson && skillMd) {
 // Staged artifact should match source for development confidence.
 // This is a warning because the artifact is gitignored and regenerated
 // by staged-install-verify.sh, but staleness can mislead local inspection.
-const STAGED_DIR = "test/staged-artifact";
+const STAGED_DIR = "staged-install";
 {
   const stagedIndex = read(join(STAGED_DIR, "skills/markdown-formatter/src/index.js"));
   const sourceIndex = read("skills/markdown-formatter/src/index.js");
   if (stagedIndex && sourceIndex && stagedIndex !== sourceIndex) {
     warnings.push(
-      "test/staged-artifact/ is stale — run bash scripts/staged-install-verify.sh to regenerate"
+      "staged-install/ is stale — run bash scripts/staged-install-verify.sh to regenerate"
     );
   }
 }

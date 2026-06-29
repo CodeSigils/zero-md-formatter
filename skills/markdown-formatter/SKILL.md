@@ -88,12 +88,13 @@ Table and pipe safety is enforced by guard scripts alongside the formatter:
 
 - `check-tables.js` validates GFM table column counts and pipe consistency.
 - `check-pipes.js` detects adjacent pipes (`||`) that create empty cells per GFM §4.10 — leading (empty first cell),
-  internal (empty cell between columns), and trailing (empty trailing cell). Ignores escaped pipes and inline code
-  spans. Exits 0 (diagnostic only).
+  internal (empty cell between columns), and trailing (empty trailing cell). Correctly ignores escaped pipes and inline
+  code spans. When invoked via the CLI (`--check`/`--fix`/`--dry-run`/`--guard`/`--validate`), adjacent pipes are a
+  blocking error — `oxfmt` cannot safely format `||` tables, so the CLI refuses before invoking it.
 - Table validation, structural table snapshots, pipe-safety checks, and automatic table repair ignore table-shaped text
   inside fenced code blocks.
-- `--check`, `--fix`, `--dry-run`, and `--guard` run pipe-safety preflight before invoking oxfmt so empty-cell
-  diagnostics are reported before formatting.
+- `--check`, `--fix`, `--dry-run`, `--guard`, and `--validate` run pipe-safety preflight before invoking oxfmt so
+  adjacent-pipe violations block with a clear error before formatting begins.
 
 ## Supported file types
 
@@ -114,8 +115,8 @@ Agents should run the Markdown formatter after creating or editing Markdown file
 ## Severity levels
 
 - Blocking violations: structural issues detected by `--guard`, `--verify`, or `--validate` exit with code 1. Adjacent
-  table-pipe violations also fail `--check`, `--fix`, and `--dry-run` before formatting begins. In write mode,
-  `--fix --guard` restores the original file content when post-format structural drift is detected.
+  table-pipe violations also fail `--check`, `--fix`, `--dry-run`, `--guard`, and `--validate` before formatting begins.
+  In write mode, `--fix --guard` restores the original file content when post-format structural drift is detected.
 - Formatting differences: corrected by `--fix`; reported with a non-zero exit by `--check` or `--verify`.
 
 ## Examples

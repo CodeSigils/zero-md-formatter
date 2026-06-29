@@ -17,7 +17,7 @@ fixtures/results/
 .tmp/
 
 # Staged install verification output
-test/staged-artifact/
+staged-install/
 
 # User's general temporary notes
 notes.md
