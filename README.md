@@ -138,18 +138,18 @@ CLI itself does not require Hermes at runtime.
 
 ### Available flags
 
-| Flag         | Description                                                                 |
-| ------------ | --------------------------------------------------------------------------- |
-| `--check`    | Check pipe safety and formatting without writing changes                    |
-| `--fix`      | Format files in-place after pipe-safety preflight; default behavior         |
-| `--all`      | Process directory inputs recursively; accepts multiple paths                |
-| `--guard`    | Enable structural pre/post guard; rolls back on drift and cleans snapshots  |
-| `--verify`   | Check formatting, idempotence, and structural integrity read-only           |
-| `--fences`   | Validate fence structure with `check-fences.js`                             |
-| `--validate` | Run structural, fence, table, and pipe validations                          |
-| `--doctor`   | Check Node.js, Oxfmt, config, and payload readiness without modifying files |
-| `--dry-run`  | Run pipe-safety preflight, then show what would change without writing      |
-| `--help`     | Display help message                                                        |
+| Flag              | Description                                                                 |
+| ----------------- | --------------------------------------------------------------------------- |
+| `--check`         | Check pipe safety and formatting without writing changes                    |
+| `--fix`           | Format files in-place after pipe-safety preflight; default behavior         |
+| `--all`           | Process directory inputs recursively; accepts multiple paths                |
+| `--guard`         | Enable structural pre/post guard; rolls back on drift and cleans snapshots  |
+| `--verify`        | Check formatting, idempotence, and structural integrity read-only           |
+| `--fences`        | Validate fence structure with `check-fences.js`                             |
+| `--validate`      | Run structural, fence, table, and pipe validations                          |
+| `--doctor`        | Check Node.js, Oxfmt, config, and payload readiness without modifying files |
+| `--dry-run`, `-n` | Run pipe-safety preflight, then show what would change without writing      |
+| `--help`, `-h`    | Display help message                                                        |
 
 ## Install instructions
 

@@ -62,8 +62,8 @@ Where `<skill-dir>` is the repository checkout (`skills/markdown-formatter/`) or
 - `--fences`: Validate fenced code block language info strings
 - `--validate`: Run structural, fence, table, and pipe validations
 - `--doctor`: Check Node.js, Oxfmt, config, and payload readiness without modifying files
-- `--dry-run`: Run pipe-safety preflight, then show what would be changed without writing files
-- `--help`: Display help message
+- `--dry-run`, `-n`: Run pipe-safety preflight, then show what would be changed without writing files
+- `--help`, `-h`: Display help message
 
 ## Prerequisites
 
