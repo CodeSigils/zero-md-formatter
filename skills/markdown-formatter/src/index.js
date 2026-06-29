@@ -386,6 +386,54 @@ function repairAdjacentPipes(content) {
   return lines.join("\n");
 }
 
+/**
+ * Normalize spacing in GFM table rows. Ensures each cell has consistent
+ * space-around-pipe formatting: `| cell | content |`.
+ * Handles empty cells (`| |`) and delimiter cells (`| :--: | --- |`).
+ *
+ * Only normalizes lines that are structurally part of pipe tables.
+ * Skips fenced code blocks.
+ *
+ * @param {string} content File text.
+ * @returns {string} Content with table spacing normalized.
+ */
+function normalizeTableSpacing(content) {
+  const lines = content.split("\n");
+  let currentFence = null;
+  let modified = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const fenceBoundary = getFenceBoundary(lines[i], currentFence);
+    if (fenceBoundary !== null) {
+      currentFence = fenceBoundary || null;
+      continue;
+    }
+    if (currentFence) continue;
+
+    const trimmed = lines[i].trim();
+    if (!trimmed.startsWith("|") || !trimmed.endsWith("|")) continue;
+
+    const cells = splitTableCells(lines[i]);
+    if (cells.length <= 1) continue;
+
+    // Reconstruct with consistent spacing: | cell | cell | cell |
+    // Empty cells get a single space; non-empty cells get space + content + space
+    const normalized = "|"
+      + cells.map((c) => {
+          if (c === "") return " ";
+          return " " + c + " ";
+        }).join("|")
+      + "|";
+
+    if (normalized !== lines[i]) {
+      lines[i] = normalized;
+      modified = true;
+    }
+  }
+
+  return modified ? lines.join("\n") : content;
+}
+
 function tableHasEmptyCells(lines, startIndex) {
   const header = lines[startIndex];
   const delimiter = lines[startIndex + 1];
@@ -560,7 +608,16 @@ function processFile(filePath, args) {
     }
     // Skip oxfmt when tables have empty cells (oxfmt 0.56.0 collapses them)
     if (hasTableWithEmptyCells(repairedContent)) {
-      console.error(`Note: ${basename(filePath)} — skipped oxfmt due to empty table cells; pipe repairs applied.`);
+      // Normalize table spacing since oxfmt won't run
+      const preNormalize = readFileSync(filePath, "utf8");
+      const spaced = normalizeTableSpacing(preNormalize);
+      if (spaced !== preNormalize) {
+        writeFileSync(filePath, spaced);
+        repairedContent = spaced;
+        console.error(`Note: ${basename(filePath)} — normalized table spacing; oxfmt skipped (empty cells).`);
+      } else {
+        console.error(`Note: ${basename(filePath)} — skipped oxfmt due to empty table cells; pipe repairs applied.`);
+      }
       return true;
     }
     const snapshotPath = `${filePath}.structure.json`;
@@ -592,10 +649,16 @@ function processFile(filePath, args) {
 
   // Before running oxfmt, check if the content has tables with any empty
   // cells. oxfmt 0.56.0 cannot safely format these — it collapses multi-row
-  // tables onto a single line. When present, skip oxfmt and accept the
-  // repaired-but-unformatted content, which remains valid GFM.
+  // tables onto a single line. When present, skip oxfmt and normalize spacing.
   if (writeMode && hasTableWithEmptyCells(repairedContent)) {
-    console.error(`Note: ${basename(filePath)} — skipped oxfmt due to empty table cells; pipe repairs applied.`);
+    const preNormalize = readFileSync(filePath, "utf8");
+    const spaced = normalizeTableSpacing(preNormalize);
+    if (spaced !== preNormalize) {
+      writeFileSync(filePath, spaced);
+      console.error(`Note: ${basename(filePath)} — normalized table spacing; oxfmt skipped (empty cells).`);
+    } else {
+      console.error(`Note: ${basename(filePath)} — skipped oxfmt due to empty table cells; pipe repairs applied.`);
+    }
     return true;
   }
 
@@ -646,6 +709,7 @@ module.exports = {
   main,
   repairTableColumns,
   repairAdjacentPipes,
+  normalizeTableSpacing,
   hasTableWithEmptyCells,
   isWriteMode,
 };
