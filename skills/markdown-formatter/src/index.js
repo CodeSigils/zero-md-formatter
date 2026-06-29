@@ -387,6 +387,42 @@ function repairAdjacentPipes(content) {
 }
 
 /**
+ * Check if content contains GFM tables with any empty cells.
+ * oxfmt 0.56.0 cannot safely format tables with empty cells, collapsing
+ * multi-row tables onto a single line.
+ *
+ * Checks the content after pipe repair.
+ *
+ * @param {string} content File text.
+ * @returns {boolean} True if any table row has an empty cell.
+ */
+function hasTableWithEmptyCells(content) {
+  const { getFenceBoundary } = require("../scripts/check-tables.js");
+  const lines = content.split("\n");
+  let currentFence = null;
+  for (const line of lines) {
+    const fenceBoundary = getFenceBoundary(line, currentFence);
+    if (fenceBoundary !== null) {
+      currentFence = fenceBoundary || null;
+      continue;
+    }
+    if (currentFence) continue;
+    if (!line.includes("|")) continue;
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("|")) continue;
+    // For a row like "|  | A | | B |  |", split on "|" gives:
+    // ["", "  ", " A ", " ", " B ", "  ", ""]
+    // Check cells at indices [1..len-2] for empty content
+    const rawCells = trimmed.split("|");
+    if (rawCells.length < 3) continue;
+    for (let i = 1; i < rawCells.length - 1; i++) {
+      if (rawCells[i].trim() === "") return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Determine if the current args indicate a write mode (files will be modified).
  * Write modes: --fix, --guard, or default (no explicit flag). All other flags
  * are read-only. Adding a new read-only flag requires adding it to READ_ONLY_FLAGS.
@@ -467,6 +503,7 @@ function processFile(filePath, args) {
 
   // Read original content before any modifications
   const originalContent = readFileSync(filePath, "utf8");
+  let repairedContent = originalContent;  // tracks content after repairs, before oxfmt
 
   // Step 1: Adjacent pipe repair (write modes) or block (read-only modes)
   // Exception: --fences only validates code fences, not tables.
@@ -475,6 +512,7 @@ function processFile(filePath, args) {
       const repaired = repairAdjacentPipes(originalContent);
       if (repaired !== originalContent) {
         writeFileSync(filePath, repaired);
+        repairedContent = repaired;
         console.error(`Repaired adjacent pipes in ${basename(filePath)}`);
       }
     } else {
@@ -494,6 +532,7 @@ function processFile(filePath, args) {
     const repaired = repairTableColumns(current);
     if (repaired !== current) {
       writeFileSync(filePath, repaired);
+      repairedContent = repaired;
     }
   }
 
@@ -508,17 +547,22 @@ function processFile(filePath, args) {
       if (!runOxfmt(["--check", filePath])) console.log(`Would format: ${filePath}`);
       return true;
     }
+    // Skip oxfmt when tables have empty cells (oxfmt 0.56.0 collapses them)
+    if (hasTableWithEmptyCells(repairedContent)) {
+      console.error(`Note: ${basename(filePath)} — skipped oxfmt due to empty table cells; pipe repairs applied.`);
+      return true;
+    }
     const snapshotPath = `${filePath}.structure.json`;
     const hadSnapshot = existsSync(snapshotPath);
     const previousSnapshot = hadSnapshot ? readFileSync(snapshotPath, "utf8") : null;
     try {
       if (!runScript("check-structure.js", "--snapshot", filePath)) return false;
       if (!runOxfmt(["--write", filePath])) {
-        writeFileSync(filePath, originalContent);
+        writeFileSync(filePath, repairedContent);
         return false;
       }
       if (!runScript("check-structure.js", "--check", filePath)) {
-        writeFileSync(filePath, originalContent);
+        writeFileSync(filePath, repairedContent);
         return false;
       }
       return true;
@@ -532,6 +576,15 @@ function processFile(filePath, args) {
 
   if (args["dry-run"]) {
     if (!runOxfmt(["--check", filePath])) console.log(`Would format: ${filePath}`);
+    return true;
+  }
+
+  // Before running oxfmt, check if the content has tables with any empty
+  // cells. oxfmt 0.56.0 cannot safely format these — it collapses multi-row
+  // tables onto a single line. When present, skip oxfmt and accept the
+  // repaired-but-unformatted content, which is safe GFM.
+  if (writeMode && hasTableWithEmptyCells(repairedContent)) {
+    console.error(`Note: ${basename(filePath)} — skipped oxfmt due to empty table cells; pipe repairs applied.`);
     return true;
   }
 
@@ -582,5 +635,6 @@ module.exports = {
   main,
   repairTableColumns,
   repairAdjacentPipes,
+  hasTableWithEmptyCells,
   isWriteMode,
 };

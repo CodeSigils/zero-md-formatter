@@ -149,7 +149,7 @@ describe('markdown formatter CLI integration', () => {
     }
   });
 
-  it('--fix --guard removes temporary structure snapshots after formatting', () => {
+  it('--fix --guard with clean table removes structure snapshots after formatting', () => {
     const dir = mkdtempSync(join(tmpdir(), 'markdown-formatter-guard-fix-'));
     const file = join(dir, 'dirty.md');
     try {
@@ -160,6 +160,29 @@ describe('markdown formatter CLI integration', () => {
       assert.equal(result.status, 0, result.stdout + result.stderr);
       assert.equal(existsSync(`${file}.structure.json`), false);
       assert.match(readFileSync(file, 'utf8'), /\| A   \| B   \|/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('--fix --guard with double-pipe table repairs and skips oxfmt', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'markdown-formatter-guard-double-pipe-'));
+    const file = join(dir, 'double-pipe.md');
+    try {
+      const original = '# Double pipe\n\n|| A | B ||\n|| :- | :- ||\n|| 1 | 2 ||\n';
+      writeFileSync(file, original);
+
+      const result = runCli(['--fix', '--guard', file]);
+
+      assert.equal(result.status, 0, result.stdout + result.stderr);
+      assert.match(result.stdout + result.stderr, /Repaired adjacent pipes/);
+      assert.match(result.stdout + result.stderr, /empty table cells/);
+      const content = readFileSync(file, 'utf8');
+      // Each row should be on its own line (oxfmt didn't collapse it)
+      const lines = content.trim().split('\n');
+      assert.equal(lines.length, 5, 'should have 5 lines (title + blank + 3 table rows)');
+      assert.doesNotMatch(content, /\|\|/, 'no adjacent pipes remain');
+      assert.equal(existsSync(`${file}.structure.json`), false);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
