@@ -15,6 +15,11 @@
 - Move `table-double-pipe.md` from violations/ to pipe-safety/ (renamed `table-empty-cells.md`). Not oxfmt-clean —
   tested by structural guards only, excluded from CI format check.
 - Update `scripts/check-all.js`: remove `check-pipes` from expected violations for double-pipe fixture.
+- Tighten table-safety wording so `||` is documented as valid GFM that is unsafe for `oxfmt`, and `check-tables.js` is
+  described as a formatter-safety validator rather than a pure GFM conformance checker.
+- Detect empty edge cells in no-leading-pipe GFM tables before formatting so `oxfmt` cannot erase them, and detect
+  minimal no-leading-pipe `||` tables when a delimiter row confirms table context.
+- Surface child-process spawn errors in CLI integration tests instead of failing later with empty stdout/stderr.
 - Clarify that fenced code block contents are ignored by table validation, table snapshots, pipe-safety checks, and
   automatic table repair.
 - Qualify the agent stale-information checklist so `references/**` is only required when that directory exists.

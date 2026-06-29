@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 /**
- * Table column validator for markdown-formatter skill.
- * Validates GFM table column consistency while ignoring escaped pipes and pipes in inline code spans.
+ * Formatter-safety table validator for markdown-formatter skill.
+ * Enforces stable table column counts for oxfmt while ignoring escaped pipes and pipes in inline code spans.
+ *
+ * Note: GFM permits body rows with fewer or more cells than the header. This
+ * checker is intentionally stricter for formatter safety.
  *
  * Usage: node check-tables.js <filePath...>
  * Exits 0 if all files are valid, 1 if violations are found.
@@ -154,6 +157,7 @@ function main(argv = process.argv.slice(2)) {
 
 module.exports = {
   splitTableCells,
+  isPotentialTableRow,
   isDelimiterLine,
   getFenceBoundary,
   validateTables,

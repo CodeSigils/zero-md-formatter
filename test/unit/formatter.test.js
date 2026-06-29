@@ -13,6 +13,7 @@ const {
   getSpawnOptions,
   resolveInputFiles,
   repairTableColumns,
+  hasTableWithEmptyCells,
 } = require('../../skills/markdown-formatter/src/index.js');
 
 describe('formatter CLI helper unit tests', () => {
@@ -378,5 +379,25 @@ describe('repairAdjacentPipes', () => {
       // Every || should become | |
       assert.doesNotMatch(line, /(?<!\|)\|\|(?!\|)/, `line has unescaped adjacent pipes: "${line}"`);
     }
+  });
+});
+
+describe('hasTableWithEmptyCells', () => {
+  it('detects empty cells in leading-pipe tables', () => {
+    const input = '# T\n\n| A | B |\n|---|---|\n|  | x |\n| y |  |\n';
+
+    assert.equal(hasTableWithEmptyCells(input), true);
+  });
+
+  it('detects empty edge cells in no-leading-pipe tables', () => {
+    const input = '# T\n\nA | B\n--- | ---\n | x\ny | \n';
+
+    assert.equal(hasTableWithEmptyCells(input), true);
+  });
+
+  it('ignores escaped pipes and inline-code pipes when checking empty cells', () => {
+    const input = '# T\n\nA | B\n--- | ---\nalpha \\| beta | `x | y`\n';
+
+    assert.equal(hasTableWithEmptyCells(input), false);
   });
 });

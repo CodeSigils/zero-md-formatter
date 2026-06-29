@@ -26,7 +26,7 @@ const { readdirSync, statSync, existsSync, readFileSync, writeFileSync, copyFile
 const { join, resolve, extname, basename } = require("path");
 const { tmpdir } = require("os");
 
-const { splitTableCells, isDelimiterLine, getFenceBoundary } = require('../scripts/check-tables.js');
+const { splitTableCells, isPotentialTableRow, isDelimiterLine, getFenceBoundary } = require('../scripts/check-tables.js');
 const { detectAdjacentPipes } = require('../scripts/check-pipes.js');
 
 const SKILL_DIR = resolve(__dirname, "..");
@@ -229,12 +229,12 @@ function isMarkdownFile(filePath) {
 }
 
 /**
- * Repair table column-count mismatches in GFM tables.
+ * Repair formatter-unsafe table column-count mismatches.
  *
  * When a table's header, delimiter, or data rows disagree on column count,
  * short rows are padded with empty trailing cells to match the largest
- * declared column count. This ensures oxfmt receives structurally valid
- * tables and can format them without triggering the structural guard.
+ * declared column count. This ensures oxfmt receives formatter-safe tables
+ * and can format them without triggering the structural guard.
  *
  * The repair is conservative: it only adds trailing empty cells, never
  * removes columns or modifies cell content.
@@ -386,6 +386,67 @@ function repairAdjacentPipes(content) {
   return lines.join("\n");
 }
 
+function splitTableCellsForStyle(line, hasOuterPipes) {
+  const trimmed = line.trim();
+  const cells = [];
+  let cell = "";
+  let escaped = false;
+  let codeSpanTicks = 0;
+  let start = 0;
+  let end = trimmed.length;
+
+  if (hasOuterPipes && trimmed[start] === "|") start++;
+  if (hasOuterPipes && end > start && trimmed[end - 1] === "|" && trimmed[end - 2] !== "\\") end--;
+
+  for (let i = start; i < end; i++) {
+    const ch = trimmed[i];
+    if (escaped) {
+      cell += ch;
+      escaped = false;
+      continue;
+    }
+    if (ch === "\\") {
+      cell += ch;
+      escaped = true;
+      continue;
+    }
+    if (ch === "`") {
+      let ticks = 1;
+      while (i + 1 < end && trimmed[i + 1] === "`") {
+        ticks++;
+        i++;
+      }
+      cell += "`".repeat(ticks);
+      codeSpanTicks = codeSpanTicks === ticks ? 0 : (codeSpanTicks || ticks);
+      continue;
+    }
+    if (ch === "|" && codeSpanTicks === 0) {
+      cells.push(cell.trim());
+      cell = "";
+      continue;
+    }
+    cell += ch;
+  }
+
+  cells.push(cell.trim());
+  return cells;
+}
+
+function tableHasEmptyCells(lines, startIndex) {
+  const header = lines[startIndex];
+  const delimiter = lines[startIndex + 1];
+  const hasOuterPipes = header.trim().startsWith("|") || delimiter.trim().startsWith("|");
+
+  for (let j = startIndex; j < lines.length; j++) {
+    if (j > startIndex + 1 && isDelimiterLine(lines[j])) break;
+    if (j > startIndex + 1 && !isPotentialTableRow(lines[j]) && !lines[j].includes("|")) break;
+    const cells = splitTableCellsForStyle(lines[j], hasOuterPipes);
+    if (cells.some((cell) => cell.trim() === "")) return true;
+  }
+
+  return false;
+}
+
 /**
  * Check if content contains GFM tables with any empty cells.
  * oxfmt 0.56.0 cannot safely format tables with empty cells, collapsing
@@ -397,27 +458,23 @@ function repairAdjacentPipes(content) {
  * @returns {boolean} True if any table row has an empty cell.
  */
 function hasTableWithEmptyCells(content) {
-  const { getFenceBoundary } = require("../scripts/check-tables.js");
   const lines = content.split("\n");
   let currentFence = null;
-  for (const line of lines) {
+  for (let i = 0; i < lines.length - 1; i++) {
+    const line = lines[i];
     const fenceBoundary = getFenceBoundary(line, currentFence);
     if (fenceBoundary !== null) {
       currentFence = fenceBoundary || null;
       continue;
     }
     if (currentFence) continue;
-    if (!line.includes("|")) continue;
-    const trimmed = line.trim();
-    if (!trimmed.startsWith("|")) continue;
-    // For a row like "|  | A | | B |  |", split on "|" gives:
-    // ["", "  ", " A ", " ", " B ", "  ", ""]
-    // Check cells at indices [1..len-2] for empty content
-    const rawCells = trimmed.split("|");
-    if (rawCells.length < 3) continue;
-    for (let i = 1; i < rawCells.length - 1; i++) {
-      if (rawCells[i].trim() === "") return true;
+
+    if (line.trim().startsWith("|") && splitTableCellsForStyle(line, true).some((cell) => cell.trim() === "")) {
+      return true;
     }
+
+    if (!isPotentialTableRow(line) || !isDelimiterLine(lines[i + 1])) continue;
+    if (tableHasEmptyCells(lines, i)) return true;
   }
   return false;
 }
@@ -526,7 +583,7 @@ function processFile(filePath, args) {
   }
 
   // Step 2: Repair table column mismatches before formatting in write modes.
-  // This ensures oxfmt receives structurally valid tables.
+  // This ensures oxfmt receives formatter-safe tables.
   if (writeMode) {
     const current = readFileSync(filePath, "utf8");
     const repaired = repairTableColumns(current);
@@ -582,7 +639,7 @@ function processFile(filePath, args) {
   // Before running oxfmt, check if the content has tables with any empty
   // cells. oxfmt 0.56.0 cannot safely format these — it collapses multi-row
   // tables onto a single line. When present, skip oxfmt and accept the
-  // repaired-but-unformatted content, which is safe GFM.
+  // repaired-but-unformatted content, which remains valid GFM.
   if (writeMode && hasTableWithEmptyCells(repairedContent)) {
     console.error(`Note: ${basename(filePath)} — skipped oxfmt due to empty table cells; pipe repairs applied.`);
     return true;
@@ -636,5 +693,6 @@ module.exports = {
   repairTableColumns,
   repairAdjacentPipes,
   hasTableWithEmptyCells,
+  splitTableCellsForStyle,
   isWriteMode,
 };

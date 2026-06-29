@@ -9,11 +9,15 @@ const ROOT = resolve(__dirname, '../..');
 const CLI = join(ROOT, 'skills/markdown-formatter/src/index.js');
 
 function runCli(args, options = {}) {
-  return spawnSync(process.execPath, [CLI, ...args], {
+  const result = spawnSync(process.execPath, [CLI, ...args], {
     cwd: ROOT,
     encoding: 'utf8',
     ...options,
   });
+  if (result.error) {
+    result.stderr = `${result.stderr || ''}\nspawn error: ${result.error.message}\n`;
+  }
+  return result;
 }
 
 describe('markdown formatter CLI integration', () => {
@@ -290,6 +294,23 @@ describe('markdown formatter CLI integration', () => {
       assert.equal(result.status, 0, result.stdout + result.stderr);
       // oxfmt normalizes column widths
       assert.match(readFileSync(file, 'utf8'), /\| A   \| B   \|/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('--fix preserves no-leading-pipe table empty edge cells by skipping oxfmt', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'markdown-formatter-nolead-empty-'));
+    const file = join(dir, 'empty-edge.md');
+    try {
+      const original = '# Empty edge cells\n\nA | B\n--- | ---\n | x\ny | \n';
+      writeFileSync(file, original);
+
+      const result = runCli(['--fix', file]);
+
+      assert.equal(result.status, 0, result.stdout + result.stderr);
+      assert.match(result.stdout + result.stderr, /empty table cells/);
+      assert.equal(readFileSync(file, 'utf8'), original);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

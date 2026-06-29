@@ -57,6 +57,13 @@ describe("check-pipes.js unit tests", () => {
     assert.match(issues[0].detail, /Adjacent pipes between columns/);
   });
 
+  it("detects adjacent pipes in no-leading-pipe headers with delimiter context", () => {
+    const issues = detectAdjacentPipes("a || b\n--- | --- | ---\n1 | 2 | 3\n");
+
+    assert.equal(issues.length, 1);
+    assert.match(issues[0].detail, /Adjacent pipes between columns/);
+  });
+
   it("passes valid tables without adjacent pipes", () => {
     const issues = detectAdjacentPipes(
       "| Name | Age | City |\n| ---- | --- | ---- |\n| A | 1 | NYC |\n",

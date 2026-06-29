@@ -19,7 +19,18 @@
 
 const fs = require("fs");
 const process = require("process");
-const { getFenceBoundary } = require("./check-tables.js");
+const { getFenceBoundary, isDelimiterLine, isPotentialTableRow, splitTableCells } = require("./check-tables.js");
+
+function isTableContext(lines, lineIndex) {
+  const line = lines[lineIndex];
+  if (lineIndex + 1 < lines.length && isDelimiterLine(lines[lineIndex + 1])) {
+    return splitTableCells(line).length === splitTableCells(lines[lineIndex + 1]).length;
+  }
+  if (lineIndex > 1 && isDelimiterLine(lines[lineIndex - 1]) && isPotentialTableRow(lines[lineIndex - 2])) {
+    return true;
+  }
+  return false;
+}
 
 /**
  * Detect adjacent-pipe patterns (empty cells) in GFM table rows.
@@ -45,11 +56,12 @@ function detectAdjacentPipes(content) {
     if (!line.includes("||")) continue;
 
     // Must look like a pipe table row. Leading-pipe rows need at least one
-    // separator pair; no-leading-pipe GFM rows need more pipe structure so
-    // prose like "some || text" is not treated as a table.
+    // separator pair; no-leading-pipe GFM rows with only one separator pair
+    // must sit next to a delimiter row so prose like "some || text" is not
+    // treated as a table.
     const trimmed = line.trim();
     const pipeCount = (line.match(/\|/g) || []).length;
-    const tableLike = trimmed.startsWith("|") ? pipeCount >= 2 : pipeCount >= 3;
+    const tableLike = trimmed.startsWith("|") ? pipeCount >= 2 : pipeCount >= 3 || isTableContext(lines, i);
     if (!tableLike) continue;
 
     let escaped = false;

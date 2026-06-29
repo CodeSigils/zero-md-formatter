@@ -100,13 +100,16 @@ Table and fence safety is enforced by repository-owned structural guards, not by
 canonical Markdown formatting pass, while the local guard scripts verify that table and fence structure survived
 formatting:
 
-- `check-tables.js` validates GFM table column counts and pipe consistency.
+- `check-tables.js` enforces formatter-safe table column counts and pipe consistency. It is stricter than GFM body-row
+  parsing because `oxfmt` must not receive table shapes known to drift.
 - `check-fences.js` validates fence closure and accidental malformed info strings.
 - `check-structure.js` snapshots fences and tables before formatting, then compares them afterward.
 - `check-pipes.js` detects adjacent pipes (`||`) in table rows, which create valid empty cells per GFM §4.10. Since
   `oxfmt` cannot safely format `||` tables, write modes (`--fix`, `--guard`, default) automatically repair them by
   inserting a space between the pipes (`| |`), preserving the empty-cell semantics. Read-only modes (`--check`,
   `--dry-run`, `--validate`) still block with a clear error before `oxfmt` is invoked.
+- Empty-cell tables that remain unsafe for `oxfmt`, including no-leading-pipe rows with empty edge cells, are preserved
+  by skipping the formatter pass after safety repairs.
 - Table validation, structural table snapshots, pipe-safety checks, and automatic table repair ignore table-shaped text
   inside fenced code blocks.
 - `--check`, `--fix`, `--dry-run`, `--guard`, and `--validate` run pipe-safety preflight before `oxfmt`. Write modes
@@ -179,7 +182,7 @@ The installed skill payload contains only these files on the user's disk:
 └── scripts/
     ├── check-structure.js      # Structural snapshot, validation, and pre/post drift comparison
     ├── check-fences.js         # Fenced code block validator for info strings and closure rules
-    ├── check-tables.js         # GFM table column-count validator
+    ├── check-tables.js         # Formatter-safety table column-count validator
     └── check-pipes.js          # Adjacent-pipe (empty cell) diagnostic for GFM tables
 ```
 
