@@ -100,8 +100,9 @@ Table and fence safety is enforced by repository-owned structural guards, not by
 canonical Markdown formatting pass, while the local guard scripts verify that table and fence structure survived
 formatting:
 
-- `check-tables.js` enforces formatter-safe table column counts and pipe consistency. It is stricter than GFM body-row
-  parsing because `oxfmt` must not receive table shapes known to drift.
+- `check-tables.js` enforces formatter-safe table column counts and pipe consistency, including unescaped pipes inside
+  inline code spans that `oxfmt`/Prettier would split as table delimiters. It is stricter than GFM body-row parsing
+  because `oxfmt` must not receive table shapes known to drift.
 - `check-fences.js` validates fence closure and accidental malformed info strings.
 - `check-structure.js` snapshots fences and tables before formatting, then compares them afterward.
 - `check-pipes.js` detects adjacent pipes (`||`) in table rows, which create valid empty cells per GFM §4.10. Since
@@ -183,7 +184,7 @@ The installed skill payload contains only these files on the user's disk:
 └── scripts/
     ├── check-structure.js      # Structural snapshot, validation, and pre/post drift comparison
     ├── check-fences.js         # Fenced code block validator for info strings and closure rules
-    ├── check-tables.js         # Formatter-safety table column-count validator
+    ├── check-tables.js         # Formatter-safety table validator (columns and inline-code pipes)
     └── check-pipes.js          # Adjacent-pipe (empty cell) diagnostic for GFM tables
 ```
 

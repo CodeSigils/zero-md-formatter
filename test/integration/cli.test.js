@@ -283,6 +283,23 @@ describe('markdown formatter CLI integration', () => {
     assert.match(result.stdout + result.stderr, /adjacent pipes/);
   });
 
+  it('--fix blocks inline-code table pipes before oxfmt can corrupt the table', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'markdown-formatter-inline-pipe-'));
+    const file = join(dir, 'inline-pipe.md');
+    try {
+      const original = '# Inline pipe\n\n| Command | Description |\n|---|---|\n| `cat a | grep b` | pipeline |\n';
+      writeFileSync(file, original);
+
+      const result = runCli(['--fix', file]);
+
+      assert.notStrictEqual(result.status, 0, result.stdout + result.stderr);
+      assert.match(result.stdout + result.stderr, /inline code span contains unescaped pipe/);
+      assert.equal(readFileSync(file, 'utf8'), original);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('--fix on a clean table succeeds (regression)', () => {
     const dir = mkdtempSync(join(tmpdir(), 'markdown-formatter-clean-fix-'));
     const file = join(dir, 'clean.md');

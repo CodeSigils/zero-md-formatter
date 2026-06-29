@@ -26,7 +26,7 @@ const { readdirSync, statSync, existsSync, readFileSync, writeFileSync, copyFile
 const { join, resolve, extname, basename } = require("path");
 const { tmpdir } = require("os");
 
-const { splitTableCells, splitTableCellsForStyle, isPotentialTableRow, isDelimiterLine, getFenceBoundary } = require('../scripts/check-tables.js');
+const { splitTableCells, splitTableCellsForStyle, isPotentialTableRow, isDelimiterLine, getFenceBoundary, validateTables } = require('../scripts/check-tables.js');
 const { detectAdjacentPipes } = require('../scripts/check-pipes.js');
 
 const SKILL_DIR = resolve(__dirname, "..");
@@ -567,6 +567,13 @@ function processFile(filePath, args) {
   // Step 1: Adjacent pipe repair (write modes) or block (read-only modes)
   // Exception: --fences only validates code fences, not tables.
   if (!args.fences) {
+    const formatterUnsafeTableErrors = validateTables(originalContent).filter((error) => error.includes("inline code span contains unescaped pipe"));
+    if (formatterUnsafeTableErrors.length > 0) {
+      console.error(`Error: ${basename(filePath)} — inline-code pipes in tables would cause oxfmt table corruption.`);
+      formatterUnsafeTableErrors.forEach((error) => console.error(`  ${error}`));
+      return false;
+    }
+
     if (writeMode) {
       const repaired = repairAdjacentPipes(originalContent);
       if (repaired !== originalContent) {

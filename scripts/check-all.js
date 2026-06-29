@@ -3,7 +3,7 @@
  * check-all.js - Run structural checks against valid fixtures and ensure violation fixtures fail.
  *
  * Usage: node check-all.js [paths...]
- *   Defaults: test/fixtures/current test/fixtures/oxfmt-spike test/fixtures/violations
+ *   Defaults: test/fixtures/current test/fixtures/oxfmt-spike test/fixtures/pipe-safety test/fixtures/violations
  *
  * Exit codes:
  *   0  All checks passed
@@ -35,6 +35,7 @@ const EXPECTED_VIOLATION_CHECKS = new Map([
   ['test/fixtures/violations/fence-untitled.md', ['check-fences']],
   ['test/fixtures/violations/table-column-drift.md', ['check-structure', 'check-tables']],
   ['test/fixtures/violations/table-adjacent-pipes.md', ['check-structure', 'check-tables']],
+  ['test/fixtures/violations/table-inline-code-pipe.md', ['check-tables']],
 ]);
 
 function collectFiles(targets) {

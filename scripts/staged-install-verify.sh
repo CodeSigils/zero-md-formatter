@@ -125,6 +125,7 @@ trap 'rm -rf "$FIXTURE_DIR"' EXIT
 VALID_FIXTURE="${FIXTURE_DIR}/valid.md"
 GUARD_FIXTURE="${FIXTURE_DIR}/guard.md"
 DOUBLE_PIPE_FIXTURE="${FIXTURE_DIR}/double-pipe.md"
+INLINE_PIPE_FIXTURE="${FIXTURE_DIR}/inline-pipe.md"
 cat > "$VALID_FIXTURE" <<'EOF'
 # Staged Fixture
 
@@ -143,6 +144,13 @@ cat > "$DOUBLE_PIPE_FIXTURE" <<'EOF'
 || A | B ||
 || --- | --- ||
 || 1 | 2 ||
+EOF
+cat > "$INLINE_PIPE_FIXTURE" <<'EOF'
+# Inline Pipe Fixture
+
+| Command | Description |
+| --- | --- |
+| `cat access.log | grep 500` | Pipeline example |
 EOF
 
 if ./skills/markdown-formatter/src/index.js --help > /dev/null 2>&1; then
@@ -192,6 +200,24 @@ if ! grep -qi -e "Repaired adjacent pipes" "$FIXTURE_DIR/double-pipe.out"; then
     cat "$FIXTURE_DIR/double-pipe.out" >&2
     exit 1
 fi
+
+ORIGINAL_INLINE_PIPE_CONTENT="$(cat "$INLINE_PIPE_FIXTURE")"
+if ./skills/markdown-formatter/src/index.js --fix "$INLINE_PIPE_FIXTURE" > "$FIXTURE_DIR/inline-pipe.out" 2>&1; then
+    echo "❌ FAILED: Staged --fix should block inline-code table pipes" >&2
+    cat "$FIXTURE_DIR/inline-pipe.out" >&2
+    exit 1
+fi
+if ! grep -qi -e "inline code span contains unescaped pipe" "$FIXTURE_DIR/inline-pipe.out"; then
+    echo "❌ FAILED: Staged --fix blocked inline-code table pipes without clear diagnostic" >&2
+    cat "$FIXTURE_DIR/inline-pipe.out" >&2
+    exit 1
+fi
+if [[ "$(cat "$INLINE_PIPE_FIXTURE")" != "$ORIGINAL_INLINE_PIPE_CONTENT" ]]; then
+    echo "❌ FAILED: Staged --fix mutated inline-code pipe fixture before blocking" >&2
+    exit 1
+fi
+
+echo "✓ Staged --fix blocks inline-code table pipes before oxfmt"
 
 if ./skills/markdown-formatter/src/index.js --guard "$GUARD_FIXTURE"; then
     echo "✓ Staged --guard succeeded"

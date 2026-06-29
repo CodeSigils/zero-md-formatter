@@ -88,8 +88,9 @@ Fence validation is structural, not style-only:
 
 Table and pipe safety is enforced by guard scripts alongside the formatter:
 
-- `check-tables.js` enforces formatter-safe table column counts and pipe consistency. It is stricter than GFM body-row
-  parsing because `oxfmt` must not receive table shapes known to drift.
+- `check-tables.js` enforces formatter-safe table column counts and pipe consistency, including unescaped pipes inside
+  inline code spans that `oxfmt`/Prettier would split as table delimiters. It is stricter than GFM body-row parsing
+  because `oxfmt` must not receive table shapes known to drift.
 - `check-pipes.js` detects adjacent pipes (`||`) that create empty cells per GFM §4.10 — leading (empty first cell),
   internal (empty cell between columns), and trailing (empty trailing cell). Correctly ignores escaped pipes and inline
   code spans. Write modes (`--fix`, `--guard`, default) automatically repair `||` by inserting a space (`| |`),
@@ -121,8 +122,9 @@ Agents should run the Markdown formatter after creating or editing Markdown file
 ## Severity levels
 
 - Blocking violations: structural issues detected by `--guard`, `--verify`, or `--validate` exit with code 1. Adjacent
-  table-pipe violations also fail `--check`, `--fix`, `--dry-run`, `--guard`, and `--validate` before formatting begins.
-  In write mode, `--fix --guard` restores the original file content when post-format structural drift is detected.
+  table-pipe violations and unescaped inline-code pipes in table rows also fail `--check`, `--fix`, `--dry-run`,
+  `--guard`, and `--validate` before formatting begins. In write mode, `--fix --guard` restores the original file
+  content when post-format structural drift is detected.
 - Formatting differences: corrected by `--fix`; reported with a non-zero exit by `--check` or `--verify`.
 
 ## Examples

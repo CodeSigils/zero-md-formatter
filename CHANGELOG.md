@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Block unescaped pipes inside inline code spans in table rows before invoking `oxfmt`; Prettier treats them as table
+  delimiters and corrupts the row. Add unit, fixture, integration, and staged-install coverage for the preflight.
+- Add GFM table spec coverage for leading-pipe/no-leading-pipe tables, escaped pipes, header-only tables, blank-line
+  table boundaries, literal fence markers inside table cells, and formatter-safety row variance.
+
 - **BREAKING: All CLI modes now BLOCK on adjacent pipes (`||`) in tables instead of passing through.** oxfmt cannot
   safely handle double-pipe GFM tables — it expands column count and corrupts the entire table. The previous
   pass-through behavior (diagnostic-only, exit 0) let oxfmt reach corrupted tables. Now `--check`, `--fix`, `--dry-run`,
