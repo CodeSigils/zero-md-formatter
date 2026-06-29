@@ -187,7 +187,7 @@ else
     cat "$FIXTURE_DIR/double-pipe.out"
     exit 1
 fi
-if ! grep -qi "adjacent pipes\|empty cell" "$FIXTURE_DIR/double-pipe.out"; then
+if ! grep -qi -e "adjacent pipes" -e "empty cell" "$FIXTURE_DIR/double-pipe.out"; then
     echo "⚠ WARNING: Staged --fix did not report adjacent pipe diagnostic"
 fi
 
