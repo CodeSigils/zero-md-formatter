@@ -20,6 +20,7 @@ const SKILL_DIR = resolve(ROOT, 'skills/markdown-formatter');
 const DEFAULT_TARGETS = [
   'test/fixtures/current',
   'test/fixtures/oxfmt-spike',
+  'test/fixtures/pipe-safety',
   'test/fixtures/violations',
 ];
 const VALID_EXTENSIONS = new Set(['.md', '.markdown', '.mdx']);
