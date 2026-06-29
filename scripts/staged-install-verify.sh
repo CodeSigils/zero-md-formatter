@@ -180,15 +180,15 @@ else
     exit 1
 fi
 
-if ./skills/markdown-formatter/src/index.js --fix "$DOUBLE_PIPE_FIXTURE" > "$FIXTURE_DIR/double-pipe.out" 2>&1; then
-    echo "✓ Staged --fix accepted adjacent table pipes with diagnostic"
+if ! ./skills/markdown-formatter/src/index.js --fix "$DOUBLE_PIPE_FIXTURE" > "$FIXTURE_DIR/double-pipe.out" 2>&1; then
+    echo "✓ Staged --fix correctly blocked adjacent table pipes (blocking error)"
 else
-    echo "❌ FAILED: Staged --fix should pass through adjacent table pipes (valid GFM)"
-    cat "$FIXTURE_DIR/double-pipe.out"
+    echo "❌ FAILED: Staged --fix should block adjacent table pipes (would cause oxfmt corruption)"
     exit 1
 fi
-if ! grep -qi -e "adjacent pipes" -e "empty cell" "$FIXTURE_DIR/double-pipe.out"; then
-    echo "⚠ WARNING: Staged --fix did not report adjacent pipe diagnostic"
+if ! grep -qi -e "adjacent pipes" "$FIXTURE_DIR/double-pipe.out"; then
+    echo "❌ FAILED: Staged --fix blocked but did not report adjacent pipe error"
+    exit 1
 fi
 
 if ./skills/markdown-formatter/src/index.js --guard "$GUARD_FIXTURE"; then

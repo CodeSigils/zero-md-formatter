@@ -27,6 +27,7 @@ const { join, resolve, extname, basename } = require("path");
 const { tmpdir } = require("os");
 
 const { splitTableCells, isDelimiterLine, getFenceBoundary } = require('../scripts/check-tables.js');
+const { detectAdjacentPipes } = require('../scripts/check-pipes.js');
 
 const SKILL_DIR = resolve(__dirname, "..");
 const OXFMT_CONFIG = join(SKILL_DIR, ".oxfmtrc.json");
@@ -401,13 +402,17 @@ function runStructuralValidation(filePath, includeFencesOnly = false) {
   );
 }
 
-function runPipeSafetyPreflight(filePath) {
-  return runScript("check-pipes.js", filePath);
-}
-
 function processFile(filePath, args) {
-  if (!args.fences && !args.validate && !args.verify) {
-    if (!runPipeSafetyPreflight(filePath)) return false;
+  // Block all modes on adjacent pipes — oxfmt cannot safely handle them.
+  // Exception: --fences only validates code fences, not tables.
+  if (!args.fences) {
+    const raw = readFileSync(filePath, "utf8");
+    const issues = detectAdjacentPipes(raw);
+    if (issues.length > 0) {
+      console.error(`Error: ${basename(filePath)} — adjacent pipes (||) would cause oxfmt table corruption.`);
+      issues.forEach(i => console.error(`  Line ${i.lineIndex + 1}: ${i.detail}`));
+      return false;
+    }
   }
 
   // Repair table column mismatches before any formatting or validation

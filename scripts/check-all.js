@@ -34,6 +34,7 @@ const EXPECTED_VIOLATION_CHECKS = new Map([
   ['test/fixtures/violations/fence-mismatch.md', ['check-structure', 'check-fences']],
   ['test/fixtures/violations/fence-untitled.md', ['check-fences']],
   ['test/fixtures/violations/table-column-drift.md', ['check-structure', 'check-tables']],
+  ['test/fixtures/violations/table-adjacent-pipes.md', ['check-structure', 'check-tables']],
 ]);
 
 function collectFiles(targets) {

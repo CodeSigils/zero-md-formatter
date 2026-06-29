@@ -101,6 +101,17 @@ function detectAdjacentPipes(content) {
 }
 
 /**
+ * Quick boolean check: does the content contain any adjacent-pipe pattern
+ * that would cause oxfmt to misparse the table?
+ *
+ * @param {string} content File text.
+ * @returns {boolean}
+ */
+function hasAdjacentPipes(content) {
+  return detectAdjacentPipes(content).length > 0;
+}
+
+/**
  * Validate a single file for adjacent-pipe patterns.
  *
  * @param {string} content File text.
@@ -146,6 +157,7 @@ function main(argv = process.argv.slice(2)) {
 
 module.exports = {
   detectAdjacentPipes,
+  hasAdjacentPipes,
   validatePipes,
   validateFile,
   main,

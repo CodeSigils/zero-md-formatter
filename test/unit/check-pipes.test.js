@@ -75,4 +75,25 @@ describe("check-pipes.js unit tests", () => {
     assert.match(errors[0], /Line 1/);
     assert.match(errors[0], /Leading adjacent pipes/);
   });
+
+  it("hasAdjacentPipes returns true when adjacent pipes are present", () => {
+    const { hasAdjacentPipes } = require(
+      "../../skills/markdown-formatter/scripts/check-pipes.js",
+    );
+    assert.equal(hasAdjacentPipes("|| Name | Age |\n|| ---- | --- |\n|| A | 1 |\n"), true);
+  });
+
+  it("hasAdjacentPipes returns false for clean tables", () => {
+    const { hasAdjacentPipes } = require(
+      "../../skills/markdown-formatter/scripts/check-pipes.js",
+    );
+    assert.equal(hasAdjacentPipes("| Name | Age |\n| ---- | --- |\n| A | 1 |\n"), false);
+  });
+
+  it("hasAdjacentPipes returns false for non-table content", () => {
+    const { hasAdjacentPipes } = require(
+      "../../skills/markdown-formatter/scripts/check-pipes.js",
+    );
+    assert.equal(hasAdjacentPipes("# Hello\n\nJust some text.\n"), false);
+  });
 });
