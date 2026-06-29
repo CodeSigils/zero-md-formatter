@@ -162,6 +162,14 @@ describe('check-structure.js unit tests', () => {
       assert.match(errors[0], /^Empty language tag on fence opener: `{3} $/);
     });
 
+    it('should detect backticks in backtick fence info strings', async () => {
+      const content = '```js`bad\nconsole.log("hello");\n```';
+      const errors = validateStructure(content);
+
+      assert.strictEqual(errors.length, 1);
+      assert.match(errors[0], /contains backtick/);
+    });
+
     it('should detect table column mismatch', async () => {
       const content = '| a | b |\n|---|---|---|\n| 1 | 2 | 3 |';
       const errors = validateStructure(content);

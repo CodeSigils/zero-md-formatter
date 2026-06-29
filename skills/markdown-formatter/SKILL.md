@@ -80,6 +80,7 @@ Fence validation is structural, not style-only:
 - Bare language-less fences are valid and allowed.
 - Whitespace-only fence info strings are invalid because they usually indicate accidental trailing whitespace.
 - Language info strings that start with whitespace are invalid because the intended language tag is ambiguous.
+- Backtick fence info strings containing backticks are invalid, matching GFM fenced code block rules.
 - Unclosed fences are invalid.
 - Post-format fence count/style drift is invalid and is rolled back by `--fix --guard`.
 

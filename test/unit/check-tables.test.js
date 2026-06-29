@@ -2,6 +2,7 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const {
   splitTableCells,
+  splitTableCellsForStyle,
   isDelimiterLine,
   validateTables,
 } = require('../../skills/markdown-formatter/scripts/check-tables.js');
@@ -11,6 +12,11 @@ describe('check-tables.js unit tests', () => {
     const cells = splitTableCells('| escaped | alpha \\| beta | `x | y` |');
 
     assert.deepStrictEqual(cells, ['escaped', 'alpha \\| beta', '`x | y`']);
+  });
+
+  it('preserves empty edge cells when outer pipes are not part of the table style', () => {
+    assert.deepStrictEqual(splitTableCellsForStyle(' | value', false), ['', 'value']);
+    assert.deepStrictEqual(splitTableCellsForStyle('value | ', false), ['value', '']);
   });
 
   it('detects delimiter lines', () => {

@@ -35,4 +35,11 @@ describe('check-fences.js unit tests', () => {
     assert.equal(errors.length, 1);
     assert.match(errors[0], /must not start with whitespace/);
   });
+
+  it('detects backticks in backtick fence info strings', () => {
+    const errors = validateFences('```js`bad\nconst x = 1;\n```\n');
+
+    assert.equal(errors.length, 1);
+    assert.match(errors[0], /must not contain backticks/);
+  });
 });

@@ -117,7 +117,8 @@ formatting:
 - `--guard` restores the original file content if post-format structure changes.
 
 Fence policy is intentionally structural, not style-only. See the [shipped SKILL.md](skills/markdown-formatter/SKILL.md)
-for the complete policy (bare fences, hidden whitespace tags, closure, post-format drift).
+for the complete policy (bare fences, hidden whitespace tags, GFM backtick info-string rules, closure, post-format
+drift).
 
 This keeps handling conservative: validate strongly, avoid semantic rewriting, and do not pretend the formatter
 configuration can express table- or fence-safety semantics it does not control.

@@ -45,6 +45,8 @@ function validateFences(content) {
       errors.push(`Line ${lineNum1Based}: Fence opener has an empty language tag.`);
     } else if (infoString.startsWith(" ") || infoString.startsWith("\t")) {
       errors.push(`Line ${lineNum1Based}: Fence opener language tag must not start with whitespace.`);
+    } else if (fenceChar === "`" && infoString.includes("`")) {
+      errors.push(`Line ${lineNum1Based}: Backtick fence info string must not contain backticks.`);
     }
 
     current = {

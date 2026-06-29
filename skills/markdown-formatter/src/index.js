@@ -26,7 +26,7 @@ const { readdirSync, statSync, existsSync, readFileSync, writeFileSync, copyFile
 const { join, resolve, extname, basename } = require("path");
 const { tmpdir } = require("os");
 
-const { splitTableCells, isPotentialTableRow, isDelimiterLine, getFenceBoundary } = require('../scripts/check-tables.js');
+const { splitTableCells, splitTableCellsForStyle, isPotentialTableRow, isDelimiterLine, getFenceBoundary } = require('../scripts/check-tables.js');
 const { detectAdjacentPipes } = require('../scripts/check-pipes.js');
 
 const SKILL_DIR = resolve(__dirname, "..");
@@ -386,52 +386,6 @@ function repairAdjacentPipes(content) {
   return lines.join("\n");
 }
 
-function splitTableCellsForStyle(line, hasOuterPipes) {
-  const trimmed = line.trim();
-  const cells = [];
-  let cell = "";
-  let escaped = false;
-  let codeSpanTicks = 0;
-  let start = 0;
-  let end = trimmed.length;
-
-  if (hasOuterPipes && trimmed[start] === "|") start++;
-  if (hasOuterPipes && end > start && trimmed[end - 1] === "|" && trimmed[end - 2] !== "\\") end--;
-
-  for (let i = start; i < end; i++) {
-    const ch = trimmed[i];
-    if (escaped) {
-      cell += ch;
-      escaped = false;
-      continue;
-    }
-    if (ch === "\\") {
-      cell += ch;
-      escaped = true;
-      continue;
-    }
-    if (ch === "`") {
-      let ticks = 1;
-      while (i + 1 < end && trimmed[i + 1] === "`") {
-        ticks++;
-        i++;
-      }
-      cell += "`".repeat(ticks);
-      codeSpanTicks = codeSpanTicks === ticks ? 0 : (codeSpanTicks || ticks);
-      continue;
-    }
-    if (ch === "|" && codeSpanTicks === 0) {
-      cells.push(cell.trim());
-      cell = "";
-      continue;
-    }
-    cell += ch;
-  }
-
-  cells.push(cell.trim());
-  return cells;
-}
-
 function tableHasEmptyCells(lines, startIndex) {
   const header = lines[startIndex];
   const delimiter = lines[startIndex + 1];
@@ -693,6 +647,5 @@ module.exports = {
   repairTableColumns,
   repairAdjacentPipes,
   hasTableWithEmptyCells,
-  splitTableCellsForStyle,
   isWriteMode,
 };

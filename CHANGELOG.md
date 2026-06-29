@@ -20,6 +20,7 @@
 - Detect empty edge cells in no-leading-pipe GFM tables before formatting so `oxfmt` cannot erase them, and detect
   minimal no-leading-pipe `||` tables when a delimiter row confirms table context.
 - Surface child-process spawn errors in CLI integration tests instead of failing later with empty stdout/stderr.
+- Centralize table cell parsing to remove duplicated scanner logic and validate GFM's backtick-fence info-string rule.
 - Clarify that fenced code block contents are ignored by table validation, table snapshots, pipe-safety checks, and
   automatic table repair.
 - Qualify the agent stale-information checklist so `references/**` is only required when that directory exists.

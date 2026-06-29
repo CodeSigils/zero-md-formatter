@@ -16,7 +16,7 @@
 "use strict";
 
 const { readFileSync, writeFileSync, existsSync } = require("fs");
-const { splitTableCells, isDelimiterLine, getFenceBoundary } = require("./check-tables.js");
+const { splitTableCells, isPotentialTableRow, isDelimiterLine, getFenceBoundary } = require("./check-tables.js");
 
 const VALID_MODES = ["--snapshot", "--check", "--guard", "--verify"];
 
@@ -69,10 +69,6 @@ function extractFences(content) {
 function parseTableRow(line) {
   const cells = splitTableCells(line);
   return { cells, colCount: cells.length };
-}
-
-function isPotentialTableRow(line) {
-  return splitTableCells(line).length > 1;
 }
 
 function extractTables(content) {
@@ -131,6 +127,7 @@ function validateStructure(content) {
   for (const fence of fences) {
     if (!fence.closer) errors.push(`Unclosed fence: ${fence.opener}`);
     if (fence.info.length > 0 && fence.info.trim() === "") errors.push(`Empty language tag on fence opener: ${fence.opener} `);
+    if (fence.style === "`" && fence.info.includes("`")) errors.push(`Backtick fence info string contains backtick: ${fence.opener}${fence.info}`);
   }
   for (const table of tables) {
     if (table.header.colCount !== table.delimiter.colCount) errors.push(`Table column mismatch: header ${table.header.colCount} vs delimiter ${table.delimiter.colCount}`);

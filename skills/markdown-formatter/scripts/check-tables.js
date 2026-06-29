@@ -15,7 +15,7 @@
 const fs = require("fs");
 const process = require("process");
 
-function splitTableCells(line) {
+function splitTableCellsForStyle(line, hasOuterPipes = true) {
   const trimmed = line.trim();
   const cells = [];
   let cell = "";
@@ -24,8 +24,8 @@ function splitTableCells(line) {
   let start = 0;
   let end = trimmed.length;
 
-  if (trimmed[start] === "|") start++;
-  if (end > start && trimmed[end - 1] === "|" && trimmed[end - 2] !== "\\") end--;
+  if (hasOuterPipes && trimmed[start] === "|") start++;
+  if (hasOuterPipes && end > start && trimmed[end - 1] === "|" && trimmed[end - 2] !== "\\") end--;
 
   for (let i = start; i < end; i++) {
     const ch = trimmed[i];
@@ -64,6 +64,10 @@ function splitTableCells(line) {
 
   cells.push(cell.trim());
   return cells;
+}
+
+function splitTableCells(line) {
+  return splitTableCellsForStyle(line, true);
 }
 
 function isPotentialTableRow(line) {
@@ -157,6 +161,7 @@ function main(argv = process.argv.slice(2)) {
 
 module.exports = {
   splitTableCells,
+  splitTableCellsForStyle,
   isPotentialTableRow,
   isDelimiterLine,
   getFenceBoundary,
