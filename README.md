@@ -117,6 +117,13 @@ formatting:
 - `--check`, `--fix`, `--dry-run`, `--guard`, and `--validate` run pipe-safety preflight before `oxfmt`. Write modes
   repair adjacent pipes automatically; read-only modes refuse to proceed when adjacent pipes are detected.
 - `--guard` restores the original file content if post-format structure changes.
+- **Unclosed-fence prelight gate.** All CLI modes detect unclosed fences via `hasUnclosedFence()` before running
+  table/pipe checks. When an unclosed fence is found, the CLI warns that table and pipe checks are unreliable (the
+  shared fence tracker treats all content after the opener as inside a code block) and skips them, while continuing with
+  fence validation and formatting. Run `--fences` to locate the unclosed fence opener.
+- **Long-fence heuristic.** `check-structure.js` flags closed fences that span >40 lines and contain GFM table structure
+  (header + delimiter pair). Such fences likely have a closer that belongs to a different opener — the shared tracker
+  treats the whole span as a single fence, blinding table/pipe checks. The warning includes the suspected line numbers.
 
 Fence policy is intentionally structural, not style-only. See the [shipped SKILL.md](skills/markdown-formatter/SKILL.md)
 for the complete policy (bare fences, hidden whitespace tags, GFM backtick info-string rules, closure, post-format

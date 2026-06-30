@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Add `hasUnclosedFence()` to `check-tables.js`: EOF-aware fence tracker that gates table/pipe checks when an unclosed
+  fence blinds the shared `getFenceBoundary` state machine. All CLI modes now detect unclosed fences early, produce a
+  warning suggesting `--fences` to locate the opener, and proceed with fence validation and formatting while skipping
+  unreliable table/pipe checks.
+- Add long-fence heuristic to `check-structure.js`: warn when a closed fence >40 lines contains GFM table structure
+  (header + delimiter pair), indicating the closer may belong to a different fence. Track `openLine`/`closeLine` on
+  fence objects for the heuristic.
+- Add `test/fixtures/violations/table-column-count.md` and `test/fixtures/violations/table-no-leading-pipe.md` — missing
+  structural-violation fixtures for column-count mismatch and no-leading-pipe patterns.
+- 115 tests pass (8 new: hasUnclosedFence, long-fence heuristic, fence heuristics, integration gates, column-count
+  fixture).
+
 - Block unescaped pipes inside inline code spans in table rows before invoking `oxfmt`; Prettier treats them as table
   delimiters and corrupts the row. Add unit, fixture, integration, and staged-install coverage for the preflight.
 - Add GFM table spec coverage for leading-pipe/no-leading-pipe tables, escaped pipes, header-only tables, blank-line
