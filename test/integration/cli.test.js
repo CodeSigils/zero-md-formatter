@@ -120,6 +120,31 @@ describe('markdown formatter CLI integration', () => {
     }
   });
 
+  it('--fix --no-repair blocks column-drift repair without mutation', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'markdown-formatter-norepair-drift-'));
+    const file = join(dir, 'column-drift.md');
+    try {
+      // Column drift: header has 2 cols, delimiter has 3 cols (no adjacent pipes)
+      const original = [
+        '# Column drift',
+        '',
+        '| Header A | Header B |',
+        '| --- | --- | --- |',
+        '| Data A | Data B |',
+      ].join('\n');
+      writeFileSync(file, original);
+
+      const result = runCli(['--fix', '--no-repair', file]);
+
+      assert.notStrictEqual(result.status, 0, result.stdout + result.stderr);
+      assert.match(result.stdout + result.stderr, /no-repair/);
+      assert.match(result.stdout + result.stderr, /column|drift|drift/i);
+      assert.equal(readFileSync(file, 'utf8'), original);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('--audit-tables reports row cell counts and hazards without writing', () => {
     const dir = mkdtempSync(join(tmpdir(), 'markdown-formatter-audit-tables-'));
     const file = join(dir, 'audit.md');
@@ -168,6 +193,32 @@ describe('markdown formatter CLI integration', () => {
       assert.match(result.stdout, /Table audit/);
       assert.match(result.stdout, /line 3: table start header-cells=4 delimiter-cells=4/);
       assert.match(result.stdout, /adjacent-pipes.*empty-cell/);
+      assert.equal(readFileSync(file, 'utf8'), original);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('--audit-tables detects delimiter-only || patterns with column mismatch', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'markdown-formatter-audit-delimiter-only-'));
+    const file = join(dir, 'delimiter-only-adjacent.md');
+    try {
+      const original = [
+        '# Delimiter-only adjacent pipes',
+        '',
+        '| Name | Age |',
+        '|| --- | --- |',
+        '| Alice | 30 |',
+        '',
+      ].join('\n');
+      writeFileSync(file, original);
+
+      const result = runCli(['--audit-tables', file]);
+
+      assert.equal(result.status, 0, result.stdout + result.stderr);
+      assert.match(result.stdout, /Table audit/);
+      // Delimiter row has 3 cells (empty + 2 delimiters) while header has 2
+      assert.match(result.stdout, /line 4: cells=3.*adjacent-pipes.*empty-cell/);
       assert.equal(readFileSync(file, 'utf8'), original);
     } finally {
       rmSync(dir, { recursive: true, force: true });

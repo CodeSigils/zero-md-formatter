@@ -328,6 +328,24 @@ describe('repairTableColumns', () => {
     assert.equal(cells.length, 3, 'data row should be padded to 3 cells');
     assert.equal(cells[2], '', 'padded cell should be empty');
   });
+
+  it('pads short data row in ||-prefixed table (needs isDelimiterLine to detect its delimiter)', () => {
+    const input = [
+      '# T',
+      '',
+      '|| A | B ||',
+      '|| --- | --- ||',
+      '|| 1 | 2 ||',
+      '|| 3 ||',
+    ].join('\n');
+    const result = repairTableColumns(input);
+    const lines = result.split('\n');
+    // Row 5 (index 5) is the short one: "|| 3 ||" → should be padded
+    const { splitTableCells: stc } = require('../../skills/markdown-formatter/scripts/check-tables.js');
+    const cells = stc(lines[5]);
+    assert.equal(cells.length, 4, 'short row should be padded to 4 cells');
+    assert.equal(cells[2], '', 'padded cell should be empty');
+  });
 });
 
 describe('repairAdjacentPipes', () => {

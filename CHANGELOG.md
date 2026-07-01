@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Add violation fixture `delimiter-adjacent-pipes.md` covering the pattern where only the delimiter row has `||` (header
+  and data rows are clean). Registers as expected violation for `check-structure` and `check-tables` (column mismatch)
+  in `check-all.js`.
+- Add unit test for `repairTableColumns` on `||`-prefixed tables with short data rows, verifying the `isDelimiterLine`
+  fix enables column-drift repair on double-pipe-prefixed content.
+- Add integration test `--fix --no-repair blocks column-drift repair without mutation`, covering the `--no-repair` flag
+  for column-drift-only files (previously only tested on adjacent-pipe files).
+- Add integration test `--audit-tables detects delimiter-only || patterns with column mismatch`, covering the audit view
+  when only the delimiter row has `||`.
 - Fix `isDelimiterLine()` in `check-tables.js` to accept `||`-prefixed delimiter rows (e.g., `|| --- | --- ||`).
   Delimiter lines with empty leading/trailing cells from `||` prefix/suffix were previously rejected because
   `splitTableCells` returns `["", "---", "---", ""]` and empty strings fail the `/^:?-{1,}:?$/` delimiter pattern. The

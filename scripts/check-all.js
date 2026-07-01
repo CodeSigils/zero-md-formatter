@@ -38,6 +38,7 @@ const EXPECTED_VIOLATION_CHECKS = new Map([
   ['test/fixtures/violations/table-no-leading-pipe.md', ['check-structure', 'check-tables']],
   ['test/fixtures/violations/table-adjacent-pipes.md', ['check-structure', 'check-tables']],
   ['test/fixtures/violations/table-inline-code-pipe.md', ['check-tables']],
+  ['test/fixtures/violations/delimiter-adjacent-pipes.md', ['check-structure', 'check-tables']],
 ]);
 
 function collectFiles(targets) {
