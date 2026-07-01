@@ -148,6 +148,32 @@ describe('markdown formatter CLI integration', () => {
     }
   });
 
+  it('--audit-tables catches double-pipe tables with empty outer cells', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'markdown-formatter-audit-doublepipe-'));
+    const file = join(dir, 'doublepipe-audit.md');
+    try {
+      const original = [
+        '# Double Pipe Audit',
+        '',
+        '|| A | B ||',
+        '|| --- | --- ||',
+        '|| 1 | 2 ||',
+        '',
+      ].join('\n');
+      writeFileSync(file, original);
+
+      const result = runCli(['--audit-tables', file]);
+
+      assert.equal(result.status, 0, result.stdout + result.stderr);
+      assert.match(result.stdout, /Table audit/);
+      assert.match(result.stdout, /line 3: table start header-cells=4 delimiter-cells=4/);
+      assert.match(result.stdout, /adjacent-pipes.*empty-cell/);
+      assert.equal(readFileSync(file, 'utf8'), original);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('--help documents table audit and no-repair debugging flags', () => {
     const result = runCli(['--help']);
 

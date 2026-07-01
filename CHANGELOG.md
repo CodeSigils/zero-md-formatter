@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Fix `isDelimiterLine()` in `check-tables.js` to accept `||`-prefixed delimiter rows (e.g., `|| --- | --- ||`).
+  Delimiter lines with empty leading/trailing cells from `||` prefix/suffix were previously rejected because
+  `splitTableCells` returns `["", "---", "---", ""]` and empty strings fail the `/^:?-{1,}:?$/` delimiter pattern. The
+  fix filters empty cells before checking, which enables `||`-prefixed tables to be detected by `auditTables()`,
+  `hasTableWithEmptyCells()`, `validateTables()`, `check-structure.js`, and `check-pipes.js` — fixing a blind spot where
+  these tables were invisible to the entire guard pipeline and the oxfmt-skip empty-cell gate.
+- Add integration test (`--audit-tables catches double-pipe tables with empty outer cells`) and unit test
+  (`hasTableWithEmptyCells detects empty cells in double-pipe prefixed tables`) coverage for the fix.
 - Add table-edit debugging support: `--audit-tables` prints per-row cell counts and hazards without writing, and
   `--no-repair` makes write modes report adjacent-pipe/column repairs instead of mutating files. This gives agents a
   read-only way to investigate whether bad `|`/`||` table structure came from generation or from formatter repair.

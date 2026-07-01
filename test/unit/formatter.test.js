@@ -417,4 +417,10 @@ describe('hasTableWithEmptyCells', () => {
 
     assert.equal(hasTableWithEmptyCells(input), false);
   });
+
+  it('detects empty cells in double-pipe prefixed tables', () => {
+    const input = '# T\n\n|| A | B ||\n|| --- | --- ||\n|| 1 | 2 ||\n';
+
+    assert.equal(hasTableWithEmptyCells(input), true);
+  });
 });

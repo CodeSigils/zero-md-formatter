@@ -167,7 +167,13 @@ function tableRowHasInlineCodePipe(line) {
 function isDelimiterLine(line) {
   const cells = splitTableCells(line);
   if (cells.length === 0) return false;
-  return cells.every((cell) => /^:?-{1,}:?$/.test(cell.trim()));
+  // Filter out empty leading/trailing cells from ||-prefixed tables.
+  // A delimiter row like || --- | --- || splits to ["", "---", "---", ""].
+  // The empty cells are structural (empty first/last cells from || prefix/suffix),
+  // not delimiter content — they should not cause the check to fail.
+  const nonEmptyCells = cells.filter((cell) => cell.trim() !== "");
+  if (nonEmptyCells.length === 0) return false;
+  return nonEmptyCells.every((cell) => /^:?-{1,}:?$/.test(cell.trim()));
 }
 
 function getFenceBoundary(line, currentFence = null) {
