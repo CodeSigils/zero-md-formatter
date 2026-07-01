@@ -114,7 +114,7 @@ function detectAdjacentPipes(content) {
 
 /**
  * Quick boolean check: does the content contain any adjacent-pipe pattern
- * that would cause oxfmt to misparse the table?
+ * that would cause the formatter to misparse the table?
  *
  * @param {string} content File text.
  * @returns {boolean}

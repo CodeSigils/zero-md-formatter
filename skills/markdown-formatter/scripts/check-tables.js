@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Formatter-safety table validator for markdown-formatter skill.
- * Enforces stable table column counts for oxfmt while ignoring escaped pipes and pipes in inline code spans.
+ * Enforces stable table column counts while ignoring escaped pipes and pipes in inline code spans.
  *
  * GFM spec: https://github.github.io/gfm/#tables-extension-  (§4.10)
  *
@@ -33,7 +33,7 @@ const process = require("process");
  * spec here by tracking backtick parity and not splitting inside code spans.
  * This is safe because the column-count comparison this function serves is
  * a formatter-safety preflight, not a spec-compliant parser. The actual
- * inline-code pipe hazard that would corrupt oxfmt output is caught by
+ * inline-code pipe hazard that would corrupt formatter output is caught by
  * tableRowHasInlineCodePipe() below (see Example 200).
  *
  * @param {string} line - A table row line
@@ -106,9 +106,9 @@ function isPotentialTableRow(line) {
  *
  * Per GFM Example 200, | inside inline code IS a cell delimiter — the spec
  * requires \| to produce literal | even inside code spans. The formatter
- * (oxfmt/Prettier, which delegates to cmark-gfm table parsing) follows the
- * spec, so an unescaped | inside `` `code` `` splits the row and corrupts
- * the table. This preflight catches the case before oxfmt runs.
+ * follows the spec, so an unescaped | inside `` `code` `` splits the row
+ * and corrupts the table. This preflight catches the case before formatting
+ * runs.
  *
  * Confirmed empirically against GitHub's Markdown API
  * (api.github.com/markdown, mode=gfm): input table row
@@ -218,7 +218,7 @@ function hasUnclosedFence(content) {
  *   - Example 204: data rows are expected to match header (formatter-safety strict variant)
  *   - Example 200: escaped pipes and inline-code pipes are flagged as formatter hazards
  *
- * Also runs inline-code pipe preflight for rows that would be split by oxfmt.
+ * Also runs inline-code pipe preflight for rows that would be split by the formatter.
  *
  * @param {string} content - File text
  * @returns {string[]} Error messages (empty = valid)
@@ -245,7 +245,7 @@ function validateTables(content) {
     const delimiterCols = splitTableCells(delimiter).length;
 
     if (tableRowHasInlineCodePipe(header)) {
-      errors.push(`Line ${i + 1}: inline code span contains unescaped pipe; oxfmt would split it as a table column`);
+      errors.push(`Line ${i + 1}: inline code span contains unescaped pipe; formatter would split it as a table column`);
     }
 
     if (delimiterCols !== headerCols) {
@@ -257,7 +257,7 @@ function validateTables(content) {
       if (isDelimiterLine(lines[j])) break;
       const dataCols = splitTableCells(lines[j]).length;
       if (tableRowHasInlineCodePipe(lines[j])) {
-        errors.push(`Line ${j + 1}: inline code span contains unescaped pipe; oxfmt would split it as a table column`);
+        errors.push(`Line ${j + 1}: inline code span contains unescaped pipe; formatter would split it as a table column`);
       }
       if (dataCols !== headerCols) {
         errors.push(`Line ${j + 1}: row ${rowIndex} has ${dataCols} cols but header has ${headerCols}`);

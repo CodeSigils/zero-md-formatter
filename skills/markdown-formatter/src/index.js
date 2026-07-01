@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Markdown Formatter CLI - Format markdown to GFM standard using oxfmt.
+ * Markdown Formatter CLI - Format markdown to GFM standard with structural guards.
  *
  * Usage: node src/index.js [options] <path...>
  *
@@ -18,24 +18,24 @@
  *   --no-repair  In write modes, report repairable table issues instead of modifying them
  *   --help       Show this help
  *
- * Prerequisites: oxfmt on PATH or in node_modules/.bin/
+ * Prerequisites: Node.js >=20.
  */
 
 "use strict";
 
-const { spawnSync } = require("child_process");
 const { readdirSync, statSync, existsSync, readFileSync, writeFileSync, copyFileSync, mkdtempSync, rmSync } = require("fs");
 const { join, resolve, extname, basename } = require("path");
 const { tmpdir } = require("os");
 
+const { formatContent } = require("./format-content.mjs");
 const { splitTableCells, splitTableCellsForStyle, isPotentialTableRow, isDelimiterLine, getFenceBoundary, hasUnclosedFence, tableRowHasInlineCodePipe, validateTables } = require('../scripts/check-tables.js');
-const { detectAdjacentPipes } = require('../scripts/check-pipes.js');
+const { detectAdjacentPipes, validatePipes } = require('../scripts/check-pipes.js');
 const { validateFences } = require('../scripts/check-fences.js');
+const { buildSnapshot, validateStructure, loadSnapshot, saveSnapshot, compareSnapshots } = require('../scripts/check-structure.js');
 
 const SKILL_DIR = resolve(__dirname, "..");
-const OXFMT_CONFIG = join(SKILL_DIR, ".oxfmtrc.json");
+const FORMATTER_MODULE = join(SKILL_DIR, "src", "format-content.mjs");
 const NODE_RUNTIME_MIN_VERSION = 20;
-const OXFMT_MAX_VERSION = "0.56.0";
 const LONG_FLAGS = new Set(["check", "fix", "all", "guard", "verify", "fences", "validate", "doctor", "dry-run", "audit-tables", "no-repair", "help"]);
 const SHORT_FLAGS = { h: "help", n: "dry-run" };
 const READ_ONLY_FLAGS = new Set(["check", "validate", "fences", "verify", "doctor", "help", "dry-run", "audit-tables"]);
@@ -82,8 +82,6 @@ Options:
   --audit-tables    Print table row cell counts and pipe hazards without writing
   --no-repair       In write modes, report repairable table issues instead of modifying them
   --help, -h        Show this help
-
-Prerequisites: oxfmt on PATH or in node_modules/.bin/
 `);
 }
 
@@ -91,80 +89,28 @@ function getSpawnOptions(options = {}) {
   return { encoding: "utf8", ...options };
 }
 
-function getOxfmtExecutableNames(platform = process.platform) {
-  return platform === "win32" ? ["oxfmt.cmd", "oxfmt.exe", "oxfmt"] : ["oxfmt"];
-}
-
-function getOxfmtPathCandidates(options = {}) {
-  const cwd = options.cwd || process.cwd();
-  const skillDir = options.skillDir || SKILL_DIR;
-  const platform = options.platform || process.platform;
-  const shimNames = getOxfmtExecutableNames(platform);
-
-  return [
-    ...shimNames.map((name) => join(cwd, "node_modules", ".bin", name)),
-    join(cwd, "node_modules", "oxfmt", "bin", "oxfmt"),
-    ...shimNames.map((name) => join(skillDir, "node_modules", ".bin", name)),
-    join(skillDir, "node_modules", "oxfmt", "bin", "oxfmt"),
-  ];
-}
-
-function resolveOxfmtBin() {
-  for (const p of getOxfmtPathCandidates()) { if (existsSync(p)) return p; }
-
-  for (const name of getOxfmtExecutableNames()) {
-    try { if (spawnSync(name, ["--version"], getSpawnOptions({ timeout: 5000 })).status === 0) return name; }
-    catch { /* not on PATH */ }
-  }
-
-  return null;
-}
-
-function getOxfmtBin() {
-  const bin = resolveOxfmtBin();
-  if (bin) return bin;
-
-  console.error("Error: oxfmt not found.");
-  console.error("Install oxfmt on PATH for installed use, or run npm ci in a development checkout.");
-  process.exit(1);
-}
-
 function isSupportedNodeVersion(version) {
   const major = Number(String(version).replace(/^v/, "").split(".")[0]);
   return Number.isInteger(major) && major >= NODE_RUNTIME_MIN_VERSION;
-}
-
-function semverCompare(a, b) {
-  const pa = a.split(".").map(Number);
-  const pb = b.split(".").map(Number);
-  for (let i = 0; i < 3; i++) {
-    if (pa[i] > pb[i]) return 1;
-    if (pa[i] < pb[i]) return -1;
-  }
-  return 0;
-}
-
-function isSupportedOxfmtVersion(versionText) {
-  const match = String(versionText).match(/(\d+)\.(\d+)\.(\d+)/);
-  if (!match) return null;
-  const detected = `${match[1]}.${match[2]}.${match[3]}`;
-  return {
-    version: detected,
-    supported: semverCompare(detected, OXFMT_MAX_VERSION) <= 0,
-  };
 }
 
 function runDoctor(options = {}) {
   const log = options.log || ((line) => console.log(line));
   const exists = options.exists || existsSync;
   const nodeVersion = options.nodeVersion || process.version;
-  const resolveOxfmt = options.resolveOxfmt || resolveOxfmtBin;
-  const runVersion = options.runVersion || ((bin) => spawnSync(bin, ["--version"], getSpawnOptions({ timeout: 5000 })));
+  const checkFormatter = options.checkFormatter || ((file) => {
+    try {
+      const formatter = require(file);
+      return { ok: typeof formatter.formatContent === "function", error: null };
+    } catch (error) {
+      return { ok: false, error };
+    }
+  });
 
   const requiredFiles = [
     join(SKILL_DIR, "SKILL.md"),
-    OXFMT_CONFIG,
     join(SKILL_DIR, "src", "index.js"),
+    FORMATTER_MODULE,
     join(SKILL_DIR, "scripts", "check-structure.js"),
     join(SKILL_DIR, "scripts", "check-fences.js"),
     join(SKILL_DIR, "scripts", "check-tables.js"),
@@ -179,27 +125,10 @@ function runDoctor(options = {}) {
   ok = ok && nodeOk;
   log(`Node.js: ${nodeVersion} (${nodeOk ? "ok" : `requires >=${NODE_RUNTIME_MIN_VERSION}`})`);
 
-  const oxfmt = resolveOxfmt();
-  if (oxfmt) {
-    const version = runVersion(oxfmt);
-    const versionText = `${version.stdout || version.stderr || ""}`.trim();
-    const versionOk = version.status === 0;
-    ok = ok && versionOk;
-    log(`oxfmt: ${oxfmt}${versionText ? ` (${versionText})` : ""}${versionOk ? "" : " (version check failed)"}`);
-    if (versionText && version.status === 0) {
-      const vi = isSupportedOxfmtVersion(versionText);
-      if (vi && !vi.supported) {
-        log(`  \u26a0 Version ${vi.version} exceeds tested maximum ${OXFMT_MAX_VERSION}. Verify compatibility before relying on newer behavior.`);
-      }
-    }
-  } else {
-    ok = false;
-    log("oxfmt: missing");
-    log("Install oxfmt on PATH for installed use, or run npm ci in a development checkout.");
-  }
-
-  log(`Config: ${OXFMT_CONFIG} (${exists(OXFMT_CONFIG) ? "ok" : "missing"})`);
-  if (!exists(OXFMT_CONFIG)) ok = false;
+  const formatterCheck = checkFormatter(FORMATTER_MODULE);
+  ok = ok && formatterCheck.ok;
+  log(`Formatter: ${FORMATTER_MODULE} (${formatterCheck.ok ? "ok" : "missing or invalid"})`);
+  if (formatterCheck.error) log(`  ${formatterCheck.error.message}`);
 
   for (const file of requiredFiles) {
     const present = exists(file);
@@ -212,21 +141,97 @@ function runDoctor(options = {}) {
   return ok;
 }
 
-function runOxfmt(oxfmtArgs) {
-  const configArgs = existsSync(OXFMT_CONFIG) ? ["--config", OXFMT_CONFIG, "--disable-nested-config"] : [];
-  const result = spawnSync(getOxfmtBin(), [...configArgs, ...oxfmtArgs], getSpawnOptions());
-  if (result.stdout) process.stdout.write(result.stdout);
-  if (result.stderr) process.stderr.write(result.stderr);
-  return result.status === 0;
-}
-
 function runScript(script, ...scriptArgs) {
-  const scriptPath = join(SKILL_DIR, "scripts", script);
-  if (!existsSync(scriptPath)) { console.error(`Error: ${script} not found`); return false; }
-  const result = spawnSync(process.execPath, [scriptPath, ...scriptArgs], getSpawnOptions());
-  if (result.stdout) process.stdout.write(result.stdout);
-  if (result.stderr) process.stderr.write(result.stderr);
-  return result.status === 0;
+  if (!scriptArgs.length) {
+    console.error(`Usage: ${script} <args...>`);
+    return false;
+  }
+
+  if (script === "check-fences.js") {
+    let ok = true;
+    for (const filePath of scriptArgs) {
+      try {
+        const errors = validateFences(readFileSync(filePath, "utf8"));
+        errors.forEach((error) => console.error(`${filePath}: ${error}`));
+        ok = ok && errors.length === 0;
+      } catch (error) {
+        console.error(`Error reading file ${filePath}: ${error.message}`);
+        ok = false;
+      }
+    }
+    return ok;
+  }
+
+  if (script === "check-tables.js") {
+    let ok = true;
+    for (const filePath of scriptArgs) {
+      try {
+        const errors = validateTables(readFileSync(filePath, "utf8"));
+        errors.forEach((error) => console.error(`${filePath}: ${error}`));
+        ok = ok && errors.length === 0;
+      } catch (error) {
+        console.error(`Error reading file ${filePath}: ${error.message}`);
+        ok = false;
+      }
+    }
+    return ok;
+  }
+
+  if (script === "check-pipes.js") {
+    let ok = true;
+    for (const filePath of scriptArgs) {
+      try {
+        validatePipes(readFileSync(filePath, "utf8")).forEach((diagnostic) => console.warn(`${filePath}: ${diagnostic}`));
+      } catch (error) {
+        console.error(`Error reading file ${filePath}: ${error.message}`);
+        ok = false;
+      }
+    }
+    return ok;
+  }
+
+  if (script === "check-structure.js") {
+    const [mode, filePath] = scriptArgs;
+    if (!filePath) {
+      console.error("Usage: node check-structure.js [--snapshot|--check|--guard|--verify] <file>");
+      return false;
+    }
+    if (!["--snapshot", "--check", "--guard", "--verify"].includes(mode)) {
+      console.error(`Invalid mode: ${mode}`);
+      return false;
+    }
+    if (!existsSync(filePath)) {
+      console.error(`Error: File not found: ${filePath}`);
+      return false;
+    }
+
+    const content = readFileSync(filePath, "utf8");
+    if (mode === "--verify") {
+      const errors = validateStructure(content);
+      errors.forEach((error) => console.error(`Structural error: ${error}`));
+      if (errors.length > 0) return false;
+      console.log(`Structure valid: ${filePath}`);
+      return true;
+    }
+    if (mode === "--snapshot" || mode === "--guard") {
+      const snapshotPath = saveSnapshot(filePath, buildSnapshot(content));
+      console.log(mode === "--snapshot" ? `Snapshot written: ${snapshotPath}` : `Snapshot: ${snapshotPath}`);
+      return true;
+    }
+    const before = loadSnapshot(filePath);
+    if (!before) {
+      console.error(`No snapshot found for ${filePath}. Run --snapshot first.`);
+      return false;
+    }
+    const drift = compareSnapshots(before, buildSnapshot(content));
+    drift.forEach((item) => console.error(`Structural drift: ${item}`));
+    if (drift.length > 0) return false;
+    console.log(`Structure preserved: ${filePath}`);
+    return true;
+  }
+
+  console.error(`Error: ${script} not found`);
+  return false;
 }
 
 function isMarkdownFile(filePath) {
@@ -238,8 +243,8 @@ function isMarkdownFile(filePath) {
  *
  * When a table's header, delimiter, or data rows disagree on column count,
  * short rows are padded with empty trailing cells to match the largest
- * declared column count. This ensures oxfmt receives formatter-safe tables
- * and can format them without triggering the structural guard.
+ * declared column count. This ensures the formatter receives structurally
+ * stable tables and can format them without triggering the structural guard.
  *
  * The repair is conservative: it only adds trailing empty cells, never
  * removes columns or modifies cell content.
@@ -318,7 +323,7 @@ function repairTableColumns(content) {
         // outer pipes. In practice every well-formed GFM table row ends
         // with |, so this is not expected in real inputs.
         // If the line already ends with |, the first repeat adds a space before the cell
-        // which is fine — oxfmt normalizes widths.
+        // which is fine — the formatter normalizes widths.
         modified = true;
       }
       j++;
@@ -333,11 +338,11 @@ function repairTableColumns(content) {
 /**
  * Repair adjacent-pipe patterns (||) in GFM table rows.
  *
- * Per GFM §4.10, consecutive pipes (||) create valid empty cells. oxfmt cannot
- * safely format tables with || because it expands column count and corrupts the
- * entire table. This function replaces || with | | (space between pipes) in
- * table rows, preserving the empty-cell semantics while producing a table that
- * oxfmt can format safely.
+ * Per GFM §4.10, consecutive pipes (||) create valid empty cells. The formatter
+ * treats adjacent pipes as a structural hazard because they expand column count
+ * and can corrupt the entire table. This function replaces || with | | (space
+ * between pipes) in table rows, preserving empty-cell semantics while producing
+ * a table that can be checked safely.
  *
  * The repair respects escaped pipes and inline code spans, and ignores content
  * inside fenced code blocks.
@@ -456,8 +461,8 @@ function tableHasEmptyCells(lines, startIndex) {
 
 /**
  * Check if content contains GFM tables with any empty cells.
- * oxfmt 0.56.0 cannot safely format tables with empty cells, collapsing
- * multi-row tables onto a single line.
+ * Empty-cell tables are intentionally preserved by the CLI because column-count
+ * ambiguity is easy to hide during automatic formatting.
  *
  * Checks the content after pipe repair.
  *
@@ -571,14 +576,33 @@ function resolveInputFiles(inputs, recursive) {
   return [...new Set(files)].sort();
 }
 
+function formatFileContent(content) {
+  return formatContent(content, { indentWidth: 2 });
+}
+
+function checkFormatting(filePath, options = {}) {
+  const content = readFileSync(filePath, "utf8");
+  const formatted = formatFileContent(content);
+  if (formatted === content) return true;
+  if (options.report !== false) console.error(`Format issues: ${filePath}`);
+  return false;
+}
+
+function writeFormatting(filePath) {
+  const content = readFileSync(filePath, "utf8");
+  const formatted = formatFileContent(content);
+  if (formatted !== content) writeFileSync(filePath, formatted);
+  return true;
+}
+
 function checkIdempotenceReadOnly(filePath) {
   const dir = mkdtempSync(join(tmpdir(), "markdown-formatter-"));
   const copy = join(dir, basename(filePath));
   try {
     copyFileSync(filePath, copy);
-    if (!runOxfmt(["--write", copy])) return false;
+    if (!writeFormatting(copy)) return false;
     const once = readFileSync(copy, "utf8");
-    if (!runOxfmt(["--write", copy])) return false;
+    if (!writeFormatting(copy)) return false;
     const twice = readFileSync(copy, "utf8");
     if (once !== twice) {
       console.error(`Idempotence check failed: ${filePath}`);
@@ -614,7 +638,7 @@ function processFile(filePath, args) {
   const isFenceOnly = args.fences;
   const unclosedFenceExists = !isFenceOnly && hasUnclosedFence(originalContent);
 
-  let repairedContent = originalContent;  // tracks content after repairs, before oxfmt
+  let repairedContent = originalContent;  // tracks content after repairs, before formatting
 
   if (args["audit-tables"]) {
     console.log(auditTables(originalContent, filePath));
@@ -627,13 +651,12 @@ function processFile(filePath, args) {
   if (!isFenceOnly && !unclosedFenceExists) {
     const formatterUnsafeTableErrors = validateTables(originalContent).filter((error) => error.includes("inline code span contains unescaped pipe"));
     if (formatterUnsafeTableErrors.length > 0) {
-      console.error(`Error: ${basename(filePath)} — inline-code pipes in tables would cause oxfmt table corruption.`);
+      console.error(`Error: ${basename(filePath)} — inline-code pipes in tables would cause formatter table corruption.`);
       formatterUnsafeTableErrors.forEach((error) => console.error(`  ${error}`));
-      // Per GFM Example 200, | inside inline code IS a cell delimiter; oxfmt
-      // follows the spec and splits the row. We block here because the
-      // formatter cannot distinguish intentional | inside `code` from an
-      // accidental delimiter. The author must escape as \| to produce
-      // literal | inside inline code in a table cell.
+      // Per GFM Example 200, | inside inline code is a cell delimiter. We block
+      // here because the formatter cannot distinguish intentional | inside
+      // `code` from an accidental delimiter. The author must escape as \| to
+      // produce literal | inside inline code in a table cell.
       return false;
     }
 
@@ -653,7 +676,7 @@ function processFile(filePath, args) {
     } else {
       const issues = detectAdjacentPipes(originalContent);
       if (issues.length > 0) {
-        console.error(`Error: ${basename(filePath)} — adjacent pipes (||) would cause oxfmt table corruption.`);
+        console.error(`Error: ${basename(filePath)} — adjacent pipes (||) would cause formatter table corruption.`);
         issues.forEach(i => console.error(`  Line ${i.lineIndex + 1}: ${i.detail}`));
         return false;
       }
@@ -684,38 +707,37 @@ function processFile(filePath, args) {
     // Still run fence validation and formatting, but skip table/pipe checks.
     if (args.fences) return runStructuralValidation(filePath, true);
     if (args.validate) return runScript("check-structure.js", "--verify", filePath) && runScript("check-fences.js", filePath);
-    if (args.verify) return runScript("check-structure.js", "--verify", filePath) && runScript("check-fences.js", filePath) && runOxfmt(["--check", filePath]) && checkIdempotenceReadOnly(filePath);
+    if (args.verify) return runScript("check-structure.js", "--verify", filePath) && runScript("check-fences.js", filePath) && checkFormatting(filePath) && checkIdempotenceReadOnly(filePath);
     if (args.guard) {
-      if (args.check) return runScript("check-structure.js", "--verify", filePath) && runScript("check-fences.js", filePath) && runOxfmt(["--check", filePath]);
+      if (args.check) return runScript("check-structure.js", "--verify", filePath) && runScript("check-fences.js", filePath) && checkFormatting(filePath);
       // --guard + --fix: skip structural snapshot (tables unreliable), still format
-      return runOxfmt(["--write", filePath]) && checkIdempotenceReadOnly(filePath);
+      return writeFormatting(filePath) && checkIdempotenceReadOnly(filePath);
     }
-    if (args.check) return runOxfmt(["--check", filePath]);
-    return runOxfmt(["--write", filePath]) && checkIdempotenceReadOnly(filePath);
+    if (args.check) return checkFormatting(filePath);
+    return writeFormatting(filePath) && checkIdempotenceReadOnly(filePath);
   }
 
   if (args.fences) return runStructuralValidation(filePath, true);
   if (args.validate) return runStructuralValidation(filePath);
-  if (args.verify) return runStructuralValidation(filePath) && runOxfmt(["--check", filePath]) && checkIdempotenceReadOnly(filePath);
+  if (args.verify) return runStructuralValidation(filePath) && checkFormatting(filePath) && checkIdempotenceReadOnly(filePath);
 
   if (args.guard) {
-    if (args.check) return runStructuralValidation(filePath) && runOxfmt(["--check", filePath]);
+    if (args.check) return runStructuralValidation(filePath) && checkFormatting(filePath);
     if (args["dry-run"]) {
       if (!runStructuralValidation(filePath)) return false;
-      if (!runOxfmt(["--check", filePath])) console.log(`Would format: ${filePath}`);
+      if (!checkFormatting(filePath, { report: false })) console.log(`Would format: ${filePath}`);
       return true;
     }
-    // Skip oxfmt when tables have empty cells (oxfmt 0.56.0 collapses them)
+    // Preserve empty-cell tables; the formatter does not guess column intent.
     if (hasTableWithEmptyCells(repairedContent)) {
-      // Normalize table spacing since oxfmt won't run
       const preNormalize = readFileSync(filePath, "utf8");
       const spaced = normalizeTableSpacing(preNormalize);
       if (spaced !== preNormalize) {
         writeFileSync(filePath, spaced);
         repairedContent = spaced;
-        console.error(`Note: ${basename(filePath)} — normalized table spacing; oxfmt skipped (empty cells).`);
+        console.error(`Note: ${basename(filePath)} — normalized table spacing; formatter skipped (empty cells).`);
       } else {
-        console.error(`Note: ${basename(filePath)} — skipped oxfmt due to empty table cells; pipe repairs applied.`);
+        console.error(`Note: ${basename(filePath)} — skipped formatter due to empty table cells; pipe repairs applied.`);
       }
       return true;
     }
@@ -724,7 +746,7 @@ function processFile(filePath, args) {
     const previousSnapshot = hadSnapshot ? readFileSync(snapshotPath, "utf8") : null;
     try {
       if (!runScript("check-structure.js", "--snapshot", filePath)) return false;
-      if (!runOxfmt(["--write", filePath])) {
+      if (!writeFormatting(filePath)) {
         writeFileSync(filePath, repairedContent);
         return false;
       }
@@ -739,29 +761,27 @@ function processFile(filePath, args) {
     }
   }
 
-  if (args.check) return runOxfmt(["--check", filePath]);
+  if (args.check) return checkFormatting(filePath);
 
   if (args["dry-run"]) {
-    if (!runOxfmt(["--check", filePath])) console.log(`Would format: ${filePath}`);
+    if (!checkFormatting(filePath, { report: false })) console.log(`Would format: ${filePath}`);
     return true;
   }
 
-  // Before running oxfmt, check if the content has tables with any empty
-  // cells. oxfmt 0.56.0 cannot safely format these — it collapses multi-row
-  // tables onto a single line. When present, skip oxfmt and normalize spacing.
+  // Preserve empty-cell tables rather than guessing author intent.
   if (writeMode && hasTableWithEmptyCells(repairedContent)) {
     const preNormalize = readFileSync(filePath, "utf8");
     const spaced = normalizeTableSpacing(preNormalize);
     if (spaced !== preNormalize) {
       writeFileSync(filePath, spaced);
-      console.error(`Note: ${basename(filePath)} — normalized table spacing; oxfmt skipped (empty cells).`);
+      console.error(`Note: ${basename(filePath)} — normalized table spacing; formatter skipped (empty cells).`);
     } else {
-      console.error(`Note: ${basename(filePath)} — skipped oxfmt due to empty table cells; pipe repairs applied.`);
+      console.error(`Note: ${basename(filePath)} — skipped formatter due to empty table cells; pipe repairs applied.`);
     }
     return true;
   }
 
-  return runOxfmt(["--write", filePath]) && checkIdempotenceReadOnly(filePath);
+  return writeFormatting(filePath) && checkIdempotenceReadOnly(filePath);
 }
 
 function main(argv = process.argv) {
@@ -795,17 +815,15 @@ if (require.main === module) {
 
 module.exports = {
   NODE_RUNTIME_MIN_VERSION,
-  OXFMT_MAX_VERSION,
   parseArgs,
-  getOxfmtPathCandidates,
   getSpawnOptions,
-  resolveOxfmtBin,
   runDoctor,
-  isSupportedOxfmtVersion,
   findMarkdownFiles,
   resolveInputFiles,
   processFile,
   main,
+  formatFileContent,
+  checkFormatting,
   repairTableColumns,
   repairAdjacentPipes,
   normalizeTableSpacing,
