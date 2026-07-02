@@ -8,43 +8,43 @@ This file contains various markdown constructs to test the linting pipeline.
 
 ### Basic Table
 
-| Name    | Age | Role      |
-| :------ | --: | :-------- |
-| Alice   |  25 | Developer |
-| Bob     |  30 | Designer  |
-| Charlie |  28 | Manager   |
+| Name    |  Age | Role      |
+| :------ | ---: | :-------- |
+| Alice   |   25 | Developer |
+| Bob     |   30 | Designer  |
+| Charlie |   28 | Manager   |
 
 ### Table with Trailing Pipe
 
 | Feature | Status | Notes         |
 | :------ | :----- | :------------ |
-| MD055   | ✅     | Trailing pipe |
-| MD060   | ✅     | Alignment     |
-| MD040   | ✅     | Blank fence   |
+| MD055   | ✅      | Trailing pipe |
+| MD060   | ✅      | Alignment     |
+| MD040   | ✅      | Blank fence   |
 
 ### Emoji Columns (tests string-width)
 
 | Emoji | Description | Code Point |
 | :---- | :---------- | :--------- |
 | 🚀    | Rocket      | U+1F680    |
-| ✅    | Check mark  | U+2705     |
+| ✅     | Check mark  | U+2705     |
 | ⚠️    | Warning     | U+26A0     |
 | 🔧    | Wrench      | U+1F527    |
 
 ### CJK Characters (tests double-width)
 
-| 言語   | 状態   | バージョン |
-| :----- | :----- | :--------- |
-| 日本語 | Active | 2.6        |
-| 中文   | Active | 2.6        |
-| 한국어 | Active | 2.6        |
+| 言語   | 状態     | バージョン |
+| :--- | :----- | :---- |
+| 日本語  | Active | 2.6   |
+| 中文   | Active | 2.6   |
+| 한국어  | Active | 2.6   |
 
 ### Mixed Content
 
-| Type  | Sample    | Width |
-| :---- | :-------- | :---- |
-| Emoji | 🌍🌎🌏    | 6     |
-| CJK   | 日本語    | 6     |
+| Type  | Sample  | Width |
+| :---- | :------ | :---- |
+| Emoji | 🌍🌎🌏  | 6     |
+| CJK   | 日本語     | 6     |
 | Mixed | Hello世界 | 8     |
 
 ### Alignment Variations

@@ -15,7 +15,12 @@ function normalizeLineEndings(content) {
 function normalizeTrailingWhitespace(content) {
   return content
     .split("\n")
-    .map((line) => line.replace(/[ \t]+$/g, ""))
+    .map((line) =>
+      line.replace(/[ \t]+$/g, (match) => {
+        // Preserve 2+ trailing spaces (Markdown hard line break), strip everything else
+        return /^  +$/.test(match) ? match : "";
+      })
+    )
     .join("\n");
 }
 
@@ -98,11 +103,28 @@ function formatTableRows(rows) {
     return width;
   });
 
+  // Determine per-column alignment from delimiter row
+  const alignments = parsedRows[1].map((delimCell) => {
+    const { left, right } = delimiterInfo(delimCell);
+    if (left && right) return "center";
+    if (right) return "right";
+    return "left";
+  });
+
   return parsedRows.map((cells, rowIndex) => {
     const formattedCells = widths.map((width, index) => {
       const cell = cells[index] || "";
       if (rowIndex === 1) return formatDelimiterCell(cell, width);
-      return cell.trim().padEnd(width);
+      const trimmed = cell.trim();
+      if (!trimmed) return " ".repeat(width);
+      const align = alignments[index] || "left";
+      if (align === "right") return trimmed.padStart(width);
+      if (align === "center") {
+        const leftPad = Math.floor((width - trimmed.length) / 2);
+        const rightPad = width - trimmed.length - leftPad;
+        return " ".repeat(leftPad) + trimmed + " ".repeat(rightPad);
+      }
+      return trimmed.padEnd(width);
     });
 
     const joined = formattedCells.map((cell) => ` ${cell} `).join("|");

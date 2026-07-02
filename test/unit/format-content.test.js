@@ -17,8 +17,8 @@ const ROOT = resolve(__dirname, '../..');
 
 describe('format-content micro-formatter', () => {
   it('removes trailing whitespace and ensures a final newline', () => {
-    assert.equal(formatContent('# Title  \n\nText\t'), '# Title\n\nText\n');
-    assert.equal(normalizeTrailingWhitespace('a  \nb\t\n'), 'a\nb\n');
+    assert.equal(formatContent('# Title  \n\nText\t'), '# Title  \n\nText\n');
+    assert.equal(normalizeTrailingWhitespace('a  \nb\t\n'), 'a  \nb\n');
     assert.equal(ensureFinalNewline('a'), 'a\n');
   });
 
@@ -41,7 +41,7 @@ describe('format-content micro-formatter', () => {
     assert.equal(alignTables(input), [
       '| A   | Long | Right | Both  |',
       '| --- | :--- | ----: | :---: |',
-      '| 1   | 2    | 3     | 4     |',
+      '| 1   | 2    |     3 |   4   |',
       '',
     ].join('\n'));
   });
