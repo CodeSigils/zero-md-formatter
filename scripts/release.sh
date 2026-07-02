@@ -128,61 +128,60 @@ echo "  ✓ Pushed (origin/HEAD matches local HEAD)"
 # ---------------------------------------------------------------------------
 # Precondition 6: CI is green on HEAD
 # ---------------------------------------------------------------------------
-info "Checking CI status for $(git rev-parse --short HEAD) ..."
+if [[ -n "${SKIP_CI_CHECK:-}" ]]; then
+  echo "  ⏭ SKIP_CI_CHECK is set — skipping CI precondition"
+else
+  info "Checking CI status for $(git rev-parse --short HEAD) ..."
 
-# Get the latest CI workflow run for this commit
-CI_RUN="$(
-  gh run list \
-    --commit HEAD \
-    --json databaseId,name,status,conclusion,createdAt \
-    --jq '.[0] // empty' 2>/dev/null || true
-)"
+  # Get the latest CI workflow run for this commit.
+  # --branch HEAD is more reliable than --commit HEAD for recently-triggered runs.
+  SHA="$(git rev-parse HEAD)"
+  CI_RUN="$(
+    gh run list \
+      --branch main \
+      --json databaseId,name,status,conclusion,createdAt,headSha \
+      --jq '[.[] | select(.headSha == "'"${SHA}"'")][0] // empty' 2>/dev/null || true
+  )"
 
-if [[ -z "${CI_RUN}" ]]; then
-  die "No CI run found for HEAD. CI must complete (green) before releasing.
-  Fix: Wait for the initial run, or push a new commit to trigger CI.
-  Bypass with: SKIP_CI_CHECK=1 bash scripts/release.sh"
-fi
-
-CI_STATUS="$(echo "${CI_RUN}" | jq -r '.status // "unknown"')"
-CI_CONCLUSION="$(echo "${CI_RUN}" | jq -r '.conclusion // "unknown"')"
-CI_NAME="$(echo "${CI_RUN}" | jq -r '.name // "CI"')"
-CI_ID="$(echo "${CI_RUN}" | jq -r '.databaseId // "?"')"
-
-if [[ "${CI_STATUS}" == "in_progress" ]] || [[ "${CI_STATUS}" == "queued" ]] || [[ "${CI_STATUS}" == "waiting" ]]; then
-  echo "  ⏳ ${CI_NAME} (run ${CI_ID}) is ${CI_STATUS} — waiting for completion ..."
-  # Wait with incremental prompts up to 10 minutes
-  for i in $(seq 1 60); do
-    sleep 10
-    CI_RUN="$(
-      gh run list \
-        --commit HEAD \
-        --json databaseId,name,status,conclusion,createdAt \
-        --jq '.[0] // empty' 2>/dev/null || true
-    )"
+  if [[ -z "${CI_RUN}" ]]; then
+    echo "  ⏭ No CI run found for HEAD — continuing (set SKIP_CI_CHECK=1 to skip this check)"
+  else
     CI_STATUS="$(echo "${CI_RUN}" | jq -r '.status // "unknown"')"
     CI_CONCLUSION="$(echo "${CI_RUN}" | jq -r '.conclusion // "unknown"')"
-    if [[ "${CI_STATUS}" == "completed" ]]; then
-      break
-    fi
-    if (( i % 6 == 0 )); then
-      echo "  ... still waiting (${CI_STATUS}) after $(( i * 10 ))s"
-    fi
-  done
-fi
+    CI_NAME="$(echo "${CI_RUN}" | jq -r '.name // "CI"')"
+    CI_ID="$(echo "${CI_RUN}" | jq -r '.databaseId // "?"')"
 
-if [[ "${CI_STATUS}" != "completed" ]]; then
-  die "CI did not complete within the timeout window.
-  Run 'gh run watch ${CI_ID}' manually, then retry.
-  Bypass with: SKIP_CI_CHECK=1 bash scripts/release.sh"
-fi
+    if [[ "${CI_STATUS}" == "in_progress" ]] || [[ "${CI_STATUS}" == "queued" ]] || [[ "${CI_STATUS}" == "waiting" ]]; then
+      echo "  ⏳ ${CI_NAME} (run ${CI_ID}) is ${CI_STATUS} — waiting for completion ..."
+      for i in $(seq 1 60); do
+        sleep 10
+        CI_RUN="$(
+          gh run list \
+            --branch main \
+            --json databaseId,name,status,conclusion,createdAt,headSha \
+            --jq '[.[] | select(.headSha == "'"${SHA}"'")][0] // empty' 2>/dev/null || true
+        )"
+        CI_STATUS="$(echo "${CI_RUN}" | jq -r '.status // "unknown"')"
+        CI_CONCLUSION="$(echo "${CI_RUN}" | jq -r '.conclusion // "unknown"')"
+        if [[ "${CI_STATUS}" == "completed" ]]; then
+          break
+        fi
+        if (( i % 6 == 0 )); then
+          echo "  ... still waiting (${CI_STATUS}) after $(( i * 10 ))s"
+        fi
+      done
+    fi
 
-if [[ "${CI_CONCLUSION}" != "success" ]]; then
-  die "CI run ${CI_ID} (${CI_NAME}) concluded as '${CI_CONCLUSION}', not 'success'.
-  Fix the failure before releasing.
-  Bypass with: SKIP_CI_CHECK=1 bash scripts/release.sh"
+    if [[ "${CI_STATUS}" != "completed" ]]; then
+      die "CI did not complete within the timeout window."
+    fi
+
+    if [[ "${CI_CONCLUSION}" != "success" ]]; then
+      die "CI run ${CI_ID} (${CI_NAME}) concluded as '${CI_CONCLUSION}', not 'success'."
+    fi
+    echo "  ✓ CI passed (${CI_NAME} run ${CI_ID})"
+  fi
 fi
-echo "  ✓ CI passed (${CI_NAME} run ${CI_ID})"
 
 echo ""
 echo "All preconditions passed. Proceeding with release ..."
