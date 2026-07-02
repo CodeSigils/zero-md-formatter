@@ -85,10 +85,6 @@ Options:
 `);
 }
 
-function getSpawnOptions(options = {}) {
-  return { encoding: "utf8", ...options };
-}
-
 function isSupportedNodeVersion(version) {
   const major = Number(String(version).replace(/^v/, "").split(".")[0]);
   return Number.isInteger(major) && major >= NODE_RUNTIME_MIN_VERSION;
@@ -213,9 +209,9 @@ function runScript(script, ...scriptArgs) {
       console.log(`Structure valid: ${filePath}`);
       return true;
     }
-    if (mode === "--snapshot" || mode === "--guard") {
+    if (mode === "--snapshot") {
       const snapshotPath = saveSnapshot(filePath, buildSnapshot(content));
-      console.log(mode === "--snapshot" ? `Snapshot written: ${snapshotPath}` : `Snapshot: ${snapshotPath}`);
+      console.log(`Snapshot written: ${snapshotPath}`);
       return true;
     }
     const before = loadSnapshot(filePath);
@@ -541,8 +537,7 @@ function isWriteMode(args) {
   for (const flag of READ_ONLY_FLAGS) {
     if (args[flag]) return false;
   }
-  if (args.fix || args.guard) return true;
-  return true; // no flags = write (default mode)
+  return true; // no read-only flag → write mode (default)
 }
 
 function findMarkdownFiles(dir) {
@@ -686,7 +681,7 @@ function processFile(filePath, args) {
   // Step 2: Repair table column mismatches before formatting in write modes.
   // Skip when an unclosed fence blinds the table tracker.
   if (writeMode && !unclosedFenceExists) {
-    const current = readFileSync(filePath, "utf8");
+    const current = repairedContent;
     const repaired = repairTableColumns(current);
     if (args["no-repair"] && repaired !== current) {
       console.error(`Error: ${basename(filePath)} — no-repair mode found table column drift; refusing automatic column repair.`);
@@ -730,7 +725,7 @@ function processFile(filePath, args) {
     }
     // Preserve empty-cell tables; the formatter does not guess column intent.
     if (hasTableWithEmptyCells(repairedContent)) {
-      const preNormalize = readFileSync(filePath, "utf8");
+      const preNormalize = repairedContent;
       const spaced = normalizeTableSpacing(preNormalize);
       if (spaced !== preNormalize) {
         writeFileSync(filePath, spaced);
@@ -770,7 +765,7 @@ function processFile(filePath, args) {
 
   // Preserve empty-cell tables rather than guessing author intent.
   if (writeMode && hasTableWithEmptyCells(repairedContent)) {
-    const preNormalize = readFileSync(filePath, "utf8");
+    const preNormalize = repairedContent;
     const spaced = normalizeTableSpacing(preNormalize);
     if (spaced !== preNormalize) {
       writeFileSync(filePath, spaced);
@@ -816,7 +811,6 @@ if (require.main === module) {
 module.exports = {
   NODE_RUNTIME_MIN_VERSION,
   parseArgs,
-  getSpawnOptions,
   runDoctor,
   findMarkdownFiles,
   resolveInputFiles,

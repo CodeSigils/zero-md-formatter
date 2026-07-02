@@ -7,7 +7,6 @@ const {
   NODE_RUNTIME_MIN_VERSION,
   parseArgs,
   runDoctor,
-  getSpawnOptions,
   resolveInputFiles,
   repairTableColumns,
   auditTables,
@@ -55,10 +54,6 @@ describe('formatter CLI helper unit tests', () => {
     assert.match(output, /Formatter: .*format-content\.mjs \(ok\)/);
     assert.match(output, /Payload: .*SKILL\.md \(ok\)/);
     assert.match(output, /Ready: yes/);
-  });
-
-  it('builds child-process options without shell execution', () => {
-    assert.deepStrictEqual(getSpawnOptions({ timeout: 5000 }), { encoding: 'utf8', timeout: 5000 });
   });
 
   it('reports missing formatter module from --doctor without exiting the process', () => {
