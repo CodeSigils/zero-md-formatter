@@ -101,7 +101,8 @@ Reference spec for users and agents: [GitHub Flavored Markdown Spec](https://git
   (`--fix`, `--guard`, default) repair them by inserting a space between the pipes (`| |`), preserving empty-cell
   semantics. Read-only modes (`--check`, `--dry-run`, `--validate`) block with a clear error.
 - Empty-cell tables that remain ambiguous, including no-leading-pipe rows with empty edge cells, are preserved by
-  skipping the full formatter pass after safety repairs.
+  skipping the full formatter pass after safety repairs. The delimiter row is still normalized to
+  3 dashes (`----` → `---`, `:-----` → `:---`, etc.) during spacing normalization.
 - Table validation, structural table snapshots, pipe-safety checks, and automatic table repair ignore table-shaped text
   inside fenced code blocks.
 - `--guard` restores the original file content if post-format structure changes.

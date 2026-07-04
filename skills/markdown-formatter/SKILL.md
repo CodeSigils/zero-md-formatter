@@ -108,7 +108,8 @@ Table and pipe safety is enforced by guard scripts alongside the formatter:
   Write modes (`--fix`, `--guard`, default) automatically repair `||` by inserting a space (`| |`), preserving
   empty-cell semantics. Read-only modes (`--check`, `--dry-run`, `--validate`) block before formatting.
 - Empty-cell tables that remain ambiguous, including no-leading-pipe rows with empty edge cells, are preserved by
-  skipping the full formatter pass after safety repairs.
+  skipping the full formatter pass after safety repairs. The delimiter row is still normalized to
+  3 dashes (`----` → `---`, `:-----` → `:---`, etc.) during spacing normalization.
 - Table validation, structural table snapshots, pipe-safety checks, and automatic table repair ignore table-shaped text
   inside fenced code blocks.
 - `--check`, `--fix`, `--dry-run`, `--guard`, and `--validate` run pipe-safety preflight before formatting. Write modes
