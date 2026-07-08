@@ -1,23 +1,6 @@
 ---
 name: markdown-formatter
-description: "Zero-dependency GFM and MDX formatter skill for AI-agent-authored Markdown, with table, pipe, and fence guards"
-version: "1.2.0"
-author: "CodeSigils"
-license: "MIT"
-compatibility: "hermes"
-metadata.hermes.tags:
-  - markdown
-  - formatter
-  - gfm
-  - github-flavored-markdown
-  - mdx
-  - ai-agents
-  - agent-tools
-  - hermes-skill
-  - documentation
-  - guardrails
-  - tables
-  - fenced-code-blocks
+description: "Zero-dependency GFM and MDX formatter with table, pipe, and fence guards for AI-agent-authored Markdown"
 ---
 
 ## Scope
@@ -60,8 +43,18 @@ Guard-owned behavior:
 node <skill-dir>/src/index.js [options] <path...>
 ```
 
-Where `<skill-dir>` is the repository checkout (`skills/markdown-formatter/`) or the installed Hermes payload
-(`~/.hermes/skills/markdown-formatter/`).
+Where `<skill-dir>` resolves to your agent's skill directory per platform:
+
+| Platform                | Skill directory                        | Install command                                                                 |
+| ----------------------- | -------------------------------------- | ------------------------------------------------------------------------------- |
+| Hermes Agent            | `~/.hermes/skills/markdown-formatter/` | `hermes skills install CodeSigils/agents-markdown-formatter/markdown-formatter` |
+| Claude Code             | `.claude/skills/markdown-formatter/`   | `cp -r skills/markdown-formatter .claude/skills/`                               |
+| Codex CLI               | `~/.codex/skills/markdown-formatter/`  | `cp -r skills/markdown-formatter ~/.codex/skills/`                              |
+| Gemini CLI / `.agents/` | `.agents/skills/markdown-formatter/`   | `cp -r skills/markdown-formatter .agents/skills/`                               |
+| OpenCode                | `.opencode/skills/markdown-formatter/` | `cp -r skills/markdown-formatter .opencode/skills/`                             |
+| Source checkout         | `skills/markdown-formatter/` (in repo) | `git clone`                                                                     |
+
+The CLI is a standalone Node.js module — it has no runtime dependencies and does not require any agent platform to function. Install it wherever Node.js >=24 is available and point `<skill-dir>` at the directory containing `src/index.js`.
 
 ### Options
 

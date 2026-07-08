@@ -5,61 +5,97 @@
 
 Zero-dependency GFM and MDX formatting for AI-agent-authored Markdown, with table, pipe, and fence guards.
 
-This repository builds a Hermes-compatible GitHub-Flavored Markdown (GFM) and MDX formatter skill. The formatter is a
-zero-dependency Node.js module that normalizes Markdown container syntax and leaves fenced code content opaque. Guard
-scripts enforce table, pipe, and fence safety before formatting and can roll back writes when structure drifts.
+This repository builds a portable GitHub-Flavored Markdown (GFM) and MDX formatter skill compatible with any agentskills.io-compatible agent. The formatter is a zero-dependency Node.js module that normalizes Markdown container syntax and leaves fenced code content opaque. Guard scripts enforce table, pipe, and fence safety before formatting and can roll back writes when structure drifts.
 
-## Quick start
+The CLI is a standalone Node.js module — no agent platform required at runtime.
 
-Install for Hermes Agent:
+---
+
+## Quick Start
+
+Make the skill discoverable by your agent.
+
+<details>
+<summary><b>Hermes Agent</b></summary>
 
 ```bash
 hermes skills install CodeSigils/agents-markdown-formatter/markdown-formatter --yes
 ```
 
-Format one file safely from an installed skill:
+Format a file with rollback-safe guards:
 
 ```bash
 node ~/.hermes/skills/markdown-formatter/src/index.js --fix --guard README.md
 ```
+</details>
 
-Verify a docs directory without writing changes:
-
-```bash
-node ~/.hermes/skills/markdown-formatter/src/index.js --verify --all docs/
-```
-
-Check installed runtime readiness:
+<details>
+<summary><b>Claude Code</b></summary>
 
 ```bash
-node ~/.hermes/skills/markdown-formatter/src/index.js --doctor
+cp -r skills/markdown-formatter ~/.claude/skills/
+node ~/.claude/skills/markdown-formatter/src/index.js --fix --guard README.md
+```
+</details>
+
+<details>
+<summary><b>Codex CLI</b></summary>
+
+```bash
+cp -r skills/markdown-formatter ~/.codex/skills/
+node ~/.codex/skills/markdown-formatter/src/index.js --fix --guard README.md
+```
+</details>
+
+<details>
+<summary><b>Gemini CLI / .agents/ path</b></summary>
+
+```bash
+cp -r skills/markdown-formatter .agents/skills/
+node .agents/skills/markdown-formatter/src/index.js --fix --guard README.md
+```
+</details>
+
+<details>
+<summary><b>OpenCode</b></summary>
+
+```bash
+cp -r skills/markdown-formatter .opencode/skills/
+node .opencode/skills/markdown-formatter/src/index.js --fix --guard README.md
+```
+</details>
+
+<details>
+<summary><b>Direct (no agent — plain Node.js)</b></summary>
+
+```bash
+git clone https://github.com/CodeSigils/agents-markdown-formatter.git
+node agents-markdown-formatter/skills/markdown-formatter/src/index.js --fix --guard README.md
 ```
 
-### Hermes auto-wiring (post-write hook)
+No `npm install` needed — zero dependencies.
+</details>
 
-To catch table formatting issues (like `||` double pipes) automatically after
-every `write_file` or `patch` call, add this to your Hermes `config.yaml`:
+---
 
-```yaml
-hooks:
-  post_tool_call:
-    - command: node ~/.hermes/skills/markdown-formatter/src/index.js --check
-      matcher: write_file
-```
+## Portability
 
-This runs `--check` (read-only) on every written file. It blocks pipe hazards,
-fence errors, and formatting drift before they reach git. For auto-repair
-instead of blocking, use `--fix` instead of `--check` (but `--fix` modifies
-files during write — use with care).
+The shipped skill uses only `name` and `description` frontmatter — no agent-specific fields. The CLI is standalone Node.js with zero npm dependencies, installable on any system with Node.js >=24.
+
+| Component              | Portable?                                 |
+| ---------------------- | ----------------------------------------- |
+| CLI (`src/index.js`)   | ✅ Pure Node.js, no agent runtime required |
+| SKILL.md               | ✅ agentskills.io base frontmatter         |
+| Guard scripts (4)      | ✅ Node.js, no agent tools referenced      |
+| Post-write hook config | Hermes-specific (platform feature)        |
+
+---
 
 ## Why this exists
 
-AI agents write a lot of Markdown: READMEs, plans, runbooks, notes, review comments, and MDX documentation. That output
-often has the same failure modes: trailing whitespace, missing final newlines, inconsistent indentation, fragile tables,
-and fenced code blocks that should not be reformatted as production source files.
+AI agents write a lot of Markdown: READMEs, plans, runbooks, notes, review comments, and MDX documentation. That output often has the same failure modes: trailing whitespace, missing final newlines, inconsistent indentation, fragile tables, and fenced code blocks that should not be reformatted as production source files.
 
-This repository keeps that scope narrow. The formatter handles low-risk presentation normalization, while guard scripts
-handle structure and safety policy.
+This repository keeps that scope narrow. The formatter handles low-risk presentation normalization, while guard scripts handle structure and safety policy.
 
 ## What it does
 
@@ -83,55 +119,40 @@ The shipped skill payload has no npm runtime dependencies.
 
 ## CLI reference
 
-From a source checkout:
-
 ```bash
-node skills/markdown-formatter/src/index.js [options] <path...>
+node <skill-dir>/src/index.js [options] <path...>
 ```
 
-Hermes is the first packaged skill target: `SKILL.md`, the install path, and shipped metadata are Hermes-compatible. The
-CLI itself does not require Hermes at runtime.
-
-| Flag              | Description                                                                                                                  |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `--check`         | Check pipe safety and formatting without writing changes                                                                     |
-| `--fix`           | Format files in-place after pipe-safety preflight; auto-repairs adjacent pipes and column-count mismatches; default behavior |
-| `--all`           | Process directory inputs recursively; accepts multiple paths                                                                 |
-| `--guard`         | Enable structural pre/post guard; rolls back on drift and cleans snapshots                                                   |
-| `--verify`        | Check formatting, idempotence, and structural integrity read-only                                                            |
-| `--fences`        | Validate fence structure with `check-fences.js`                                                                              |
-| `--validate`      | Run structural, fence, table, and pipe validations                                                                           |
-| `--doctor`        | Check Node.js and payload readiness without modifying files                                                                  |
-| `--dry-run`, `-n` | Run pipe-safety preflight, then show what would change without writing                                                       |
-| `--audit-tables`  | Print table row cell counts and pipe hazards without writing; use before/after agent table edits                             |
-| `--no-repair`     | In write modes, report repairable table issues instead of modifying them                                                     |
-| `--help`, `-h`    | Display help message                                                                                                         |
+See [SKILL.md](skills/markdown-formatter/SKILL.md) for the full CLI flag reference, platform resolution table, and policy details.
 
 ## Safety policy
 
 Reference spec for users and agents: [GitHub Flavored Markdown Spec](https://github.github.com/gfm/).
 
-- `check-tables.js` enforces formatter-safe table column counts and pipe consistency, including unescaped pipes inside
-  inline code spans. It is stricter than GFM body-row parsing because autonomous formatting should not guess table
-  intent.
-- `check-pipes.js` detects adjacent pipes (`||`) in table rows, which create valid empty cells per GFM. Write modes
-  (`--fix`, `--guard`, default) repair them by inserting a space between the pipes (`| |`), preserving empty-cell
-  semantics. Read-only modes (`--check`, `--dry-run`, `--validate`) block with a clear error.
-- Empty-cell tables that remain ambiguous, including no-leading-pipe rows with empty edge cells, are preserved by
-  skipping the full formatter pass after safety repairs. The delimiter row is still normalized to
-  3 dashes (`----` → `---`, `:-----` → `:---`, etc.) during spacing normalization.
-- Table validation, structural table snapshots, pipe-safety checks, and automatic table repair ignore table-shaped text
-  inside fenced code blocks.
-- `--guard` restores the original file content if post-format structure changes.
-- All CLI modes detect unclosed fences before table/pipe checks. When an unclosed fence is found, the CLI warns that
-  table and pipe checks are unreliable and skips them while continuing with fence validation and formatting.
+- `check-tables.js` enforces formatter-safe table column counts and pipe consistency, including unescaped pipes inside inline code spans. It is stricter than GFM body-row parsing because autonomous formatting should not guess table intent.
+- `check-pipes.js` detects adjacent pipes (`||`) in table rows, which create valid empty cells per GFM. Write modes (`--fix`, `--guard`, default) repair them by inserting a space between the pipes (`| |`), preserving empty-cell semantics. Read-only modes (`--check`, `--dry-run`, `--validate`) block with a clear error.
+- Empty-cell tables that remain ambiguous are preserved by skipping the full formatter pass after safety repairs.
+- All CLI modes detect unclosed fences before table/pipe checks.
+
+## Hermes auto-wiring (post-write hook)
+
+To catch table formatting issues (like `||` double pipes) automatically after every `write_file` or `patch` call on Hermes, add this to your `config.yaml`:
+
+```yaml
+hooks:
+  post_tool_call:
+    - command: node ~/.hermes/skills/markdown-formatter/src/index.js --check
+      matcher: write_file
+```
+
+This runs `--check` (read-only) on every written file. It blocks pipe hazards, fence errors, and formatting drift before they reach git. For auto-repair instead of blocking, use `--fix` instead of `--check`.
 
 ## Install payload
 
-The installed skill payload contains only these files on the user's disk:
+The installed skill payload contains only these files:
 
 ```text
-~/.hermes/skills/markdown-formatter/
+<skill-dir>/
 ├── SKILL.md
 ├── src/
 │   ├── format-content.mjs
@@ -147,16 +168,10 @@ Repository-only files (`README.md`, `test/`, `package.json`, etc.) are excluded 
 
 ## Prerequisites
 
-The formatter requires Node.js >=24. For repository development:
+Node.js >=24. To diagnose an installed skill without modifying files:
 
 ```bash
-npm ci
-```
-
-To diagnose an installed skill without modifying files:
-
-```bash
-node ~/.hermes/skills/markdown-formatter/src/index.js --doctor
+node <skill-dir>/src/index.js --doctor
 ```
 
 `--doctor` exits 0 when Node.js and required runtime payload files are ready.
@@ -164,10 +179,10 @@ node ~/.hermes/skills/markdown-formatter/src/index.js --doctor
 ## Test structure
 
 - `test/fixtures/current/` — real-world docs that should format cleanly
-- `test/fixtures/format-edge-cases/` — formatter edge cases retained from the Oxfmt spike
+- `test/fixtures/format-edge-cases/` — formatter edge cases
 - `test/fixtures/pipe-safety/` — valid GFM that requires guard behavior
 - `test/fixtures/violations/` — structural violations the guard must detect
-- `test/unit/` — isolated component tests for formatter and guards
+- `test/unit/` — isolated component tests
 - `test/integration/` — CLI and pipeline end-to-end tests
 
 ## Shipping and release
@@ -175,14 +190,13 @@ node ~/.hermes/skills/markdown-formatter/src/index.js --doctor
 The skill follows a strict runtime allowlist:
 
 - Shipped: only files under `skills/markdown-formatter/` needed at runtime
-- Excluded: planning docs, tests, fixtures, development tooling, and repository-only metadata
+- Excluded: planning docs, tests, fixtures, development tooling
 - Verification: `bash scripts/staged-install-verify.sh` stages and tests the exact runtime payload
-- Dependency boundary: root `package.json` and `package-lock.json` are repository-only
 
 Recommended release practice:
 
 1. Keep runtime changes and version bumps in separate commits.
-2. Before tagging a runtime release, verify the exact commit with:
+2. Before tagging a release, verify with:
 
    ```bash
    node scripts/check-consistency.js
@@ -191,15 +205,8 @@ Recommended release practice:
    bash scripts/staged-install-verify.sh
    ```
 
-3. Push the version-bump commit to main and confirm GitHub Actions is green.
-4. Run the release script:
-
-   ```bash
-   npm run release
-   ```
-
-The release script validates a clean tree, tag availability, isolated version metadata changes, pushed HEAD, and green
-CI before tagging. GitHub Release notes are generated from commit subjects since the previous version tag.
+3. Push the version-bump commit to main and confirm CI is green.
+4. Run `npm run release`.
 
 ## Project files
 
