@@ -1,7 +1,7 @@
 const { describe, it } = require("node:test");
 const assert = require("node:assert/strict");
 const { detectAdjacentPipes, validatePipes } = require(
-  "../../skills/markdown-formatter/scripts/check-pipes.js",
+  "../../guard/check-pipes.js",
 );
 
 describe("check-pipes.js unit tests", () => {
@@ -85,21 +85,21 @@ describe("check-pipes.js unit tests", () => {
 
   it("hasAdjacentPipes returns true when adjacent pipes are present", () => {
     const { hasAdjacentPipes } = require(
-      "../../skills/markdown-formatter/scripts/check-pipes.js",
+      "../../guard/check-pipes.js",
     );
     assert.equal(hasAdjacentPipes("|| Name | Age |\n|| ---- | --- |\n|| A | 1 |\n"), true);
   });
 
   it("hasAdjacentPipes returns false for clean tables", () => {
     const { hasAdjacentPipes } = require(
-      "../../skills/markdown-formatter/scripts/check-pipes.js",
+      "../../guard/check-pipes.js",
     );
     assert.equal(hasAdjacentPipes("| Name | Age |\n| ---- | --- |\n| A | 1 |\n"), false);
   });
 
   it("hasAdjacentPipes returns false for non-table content", () => {
     const { hasAdjacentPipes } = require(
-      "../../skills/markdown-formatter/scripts/check-pipes.js",
+      "../../guard/check-pipes.js",
     );
     assert.equal(hasAdjacentPipes("# Hello\n\nJust some text.\n"), false);
   });

@@ -9,7 +9,7 @@
 const { spawnSync } = require("child_process");
 const { ROOT, extractFrontmatterVersion } = require("./common");
 
-const RUNTIME_DIRS = ["skills/markdown-formatter/"];
+const RUNTIME_DIRS = [""];
 
 function isRuntimeFile(file) {
   return RUNTIME_DIRS.some((d) => file.startsWith(d));
@@ -50,7 +50,7 @@ function validateReleaseDrift(files) {
 
   const runtimeChanges = changedFiles.filter(isRuntimeFile);
 
-  const skillMd = files["skills/markdown-formatter/SKILL.md"];
+  const skillMd = files["SKILL.md"];
   const latestTagVer = getLatestTagVersion();
   if (runtimeChanges.length > 0 && latestTagVer) {
     const currentVer = extractFrontmatterVersion(skillMd || "");

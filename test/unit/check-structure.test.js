@@ -6,7 +6,7 @@ const {
   buildSnapshot,
   validateStructure,
   compareSnapshots,
-} = require('../../skills/markdown-formatter/scripts/check-structure.js');
+} = require('../../guard/check-structure.js');
 
 describe('check-structure.js unit tests', () => {
   // Test the helper functions directly

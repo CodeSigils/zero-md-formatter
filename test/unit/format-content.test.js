@@ -11,7 +11,7 @@ const {
   normalizeIndentation,
   alignTables,
   normalizeFences,
-} = require('../../skills/markdown-formatter/src/format-content.mjs');
+} = require('../../src/format-content.mjs');
 
 const ROOT = resolve(__dirname, '../..');
 
@@ -141,7 +141,7 @@ describe('format-content micro-formatter', () => {
 
       for (const script of ['check-structure.js', 'check-tables.js', 'check-fences.js']) {
         const args = script === 'check-structure.js' ? ['--verify', file] : [file];
-        const result = spawnSync(process.execPath, [join(ROOT, 'skills/markdown-formatter/scripts', script), ...args], {
+        const result = spawnSync(process.execPath, [join(ROOT, 'guard', script), ...args], {
           cwd: ROOT,
           encoding: 'utf8',
         });

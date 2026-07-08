@@ -24,9 +24,9 @@ for (const f of [
   ".node-version",
   "package.json",
   ".github/workflows/ci.yml",
-  "skills/markdown-formatter/SKILL.md",
-  "skills/markdown-formatter/src/index.js",
-  "skills/markdown-formatter/src/format-content.mjs",
+  "SKILL.md",
+  "src/index.js",
+  "src/format-content.mjs",
 ]) {
   files[f] = read(f);
 }
@@ -53,15 +53,15 @@ add(validateReleaseLatest());
 // ---------------------------------------------------------------------------
 
 const readme = files["README.md"];
-const skillMd = files["skills/markdown-formatter/SKILL.md"];
-const indexJs = files["skills/markdown-formatter/src/index.js"];
-const formatContent = files["skills/markdown-formatter/src/format-content.mjs"];
+const skillMd = files["SKILL.md"];
+const indexJs = files["src/index.js"];
+const formatContent = files["src/format-content.mjs"];
 const pkgJson = files["package.json"];
 
 // Node.js runtime min version
 const runtimeMinNodeVersion = indexJs ? extractRuntimeNodeMinVersion(indexJs) : null;
 if (!runtimeMinNodeVersion) {
-  errors.push("skills/markdown-formatter/src/index.js: NODE_RUNTIME_MIN_VERSION is missing or unreadable");
+  errors.push("src/index.js: NODE_RUNTIME_MIN_VERSION is missing or unreadable");
 }
 
 // package.json: engines.node
@@ -92,19 +92,19 @@ const staleChecks = [
 
 const ACTIVE_DRIFT_CHECK_PATTERNS = [
   ...FORMAT_FILES,
-  "skills/markdown-formatter/src/index.js",
-  "skills/markdown-formatter/src/format-content.mjs",
-  "skills/markdown-formatter/scripts/check-structure.js",
-  "skills/markdown-formatter/scripts/check-fences.js",
-  "skills/markdown-formatter/scripts/check-tables.js",
-  "skills/markdown-formatter/scripts/check-pipes.js",
+  "src/index.js",
+  "src/format-content.mjs",
+  "guard/check-structure.js",
+  "guard/check-fences.js",
+  "guard/check-tables.js",
+  "guard/check-pipes.js",
 ];
 
 for (const [file, content] of [
   ["README.md", readme],
-  ["skills/markdown-formatter/SKILL.md", skillMd],
-  ["skills/markdown-formatter/src/index.js", indexJs],
-  ["skills/markdown-formatter/src/format-content.mjs", formatContent],
+  ["SKILL.md", skillMd],
+  ["src/index.js", indexJs],
+  ["src/format-content.mjs", formatContent],
 ]) {
   if (!content) continue;
   if (!ACTIVE_DRIFT_CHECK_PATTERNS.some((p) => file.startsWith(p))) continue;
@@ -149,10 +149,10 @@ const { join } = require("path");
 const { ROOT } = require("./validators/common");
 
 try {
-  const stagedIndex = readFileSync(join(ROOT, STAGED_DIR, "skills/markdown-formatter/src/index.js"), "utf8");
-  const sourceIndex = readFileSync(join(ROOT, "skills/markdown-formatter/src/index.js"), "utf8");
-  const stagedFormatter = readFileSync(join(ROOT, STAGED_DIR, "skills/markdown-formatter/src/format-content.mjs"), "utf8");
-  const sourceFormatter = readFileSync(join(ROOT, "skills/markdown-formatter/src/format-content.mjs"), "utf8");
+  const stagedIndex = readFileSync(join(ROOT, STAGED_DIR, "src/index.js"), "utf8");
+  const sourceIndex = readFileSync(join(ROOT, "src/index.js"), "utf8");
+  const stagedFormatter = readFileSync(join(ROOT, STAGED_DIR, "src/format-content.mjs"), "utf8");
+  const sourceFormatter = readFileSync(join(ROOT, "src/format-content.mjs"), "utf8");
   if (
     (stagedIndex && sourceIndex && stagedIndex !== sourceIndex) ||
     (stagedFormatter && sourceFormatter && stagedFormatter !== sourceFormatter)
@@ -179,7 +179,7 @@ if (indexJs && skillMd) {
 if (indexJs && indexJs.includes("--doctor")) {
   const doctorDocs = [
     ["README.md", readme],
-    ["skills/markdown-formatter/SKILL.md", skillMd],
+    ["SKILL.md", skillMd],
   ];
   for (const [file, content] of doctorDocs) {
     if (!content || !content.includes("--doctor")) {

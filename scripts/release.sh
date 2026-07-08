@@ -47,7 +47,7 @@ echo ""
 # Precondition 0: verify SKILL.md frontmatter version matches package.json
 # ---------------------------------------------------------------------------
 info "Checking SKILL.md version alignment ..."
-SKILL_MD_VERSION="$(grep '^version:' skills/markdown-formatter/SKILL.md | sed 's/^version: *//; s/^"//; s/"$//; s/^'"'"'//; s/'"'"'$//')"
+SKILL_MD_VERSION="$(grep '^version:' SKILL.md | sed 's/^version: *//; s/^"//; s/"$//; s/^'"'"'//; s/'"'"'$//')"
 if [[ -z "${SKILL_MD_VERSION}" ]]; then
   die "SKILL.md is missing a 'version:' field in its frontmatter. Add: version: ${VERSION}"
 fi
@@ -92,7 +92,7 @@ echo "  ✓ Authenticated"
 info "Checking release commit isolation ..."
 
 # Files that are allowed to change in a release commit
-ALLOWED_RELEASE_FILES="^package\.json$|^package-lock\.json$|^README\.md$|^skills/markdown-formatter/SKILL\.md$"
+ALLOWED_RELEASE_FILES="^package\\.json$|^package-lock\\.json$|^README\\.md$|^SKILL\\.md$"
 
 # Get files changed in HEAD vs its parent
 PARENT_SHA="$(git rev-parse HEAD~1 2>/dev/null || true)"
@@ -115,7 +115,7 @@ else
   if [[ "${VIOLATIONS}" -gt 0 ]]; then
     echo ""
     die "Release commit changes ${VIOLATIONS} file(s) outside the version-bump allowlist.
-  Allowed: package.json, package-lock.json, README.md, skills/markdown-formatter/SKILL.md
+  Allowed: package.json, package-lock.json, README.md, SKILL.md
   Fix: 1. Commit runtime changes separately (not in the release commit)
         2. Then make a clean version-bump commit with only the files above"
   fi

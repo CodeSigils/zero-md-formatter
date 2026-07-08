@@ -119,10 +119,10 @@ jobs:
         mkdir -p "$TMP_DIR/input/current" "$TMP_DIR/input/format-edge-cases"
         cp -a test/fixtures/current/. "$TMP_DIR/input/current/"
         cp -a test/fixtures/format-edge-cases/. "$TMP_DIR/input/format-edge-cases/"
-        node skills/markdown-formatter/src/index.js --check --all "$TMP_DIR/input/"
-        node skills/markdown-formatter/src/index.js --all "$TMP_DIR/input/"
+        node src/index.js --check --all "$TMP_DIR/input/"
+        node src/index.js --all "$TMP_DIR/input/"
         cp -a "$TMP_DIR/input" "$TMP_DIR/after-first-pass"
-        node skills/markdown-formatter/src/index.js --all "$TMP_DIR/input/"
+        node src/index.js --all "$TMP_DIR/input/"
         if diff -rq "$TMP_DIR/input" "$TMP_DIR/after-first-pass"; then
           echo "Idempotence: PASS"
         else

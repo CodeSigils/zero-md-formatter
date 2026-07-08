@@ -6,7 +6,7 @@ const {
   isDelimiterLine,
   validateTables,
   hasUnclosedFence,
-} = require('../../skills/markdown-formatter/scripts/check-tables.js');
+} = require('../../guard/check-tables.js');
 
 describe('check-tables.js unit tests', () => {
   it('ignores escaped pipes and pipes inside inline code spans', () => {

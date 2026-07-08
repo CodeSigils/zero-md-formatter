@@ -10,13 +10,13 @@ STAGE_DIR="${SOURCE_DIR}/staged-install"
 
 # Define the exact runtime allowlist (what should be copied)
 RUNTIME_ALLOWLIST=(
-    "skills/markdown-formatter/SKILL.md"
-    "skills/markdown-formatter/src/index.js"
-    "skills/markdown-formatter/src/format-content.mjs"
-    "skills/markdown-formatter/scripts/check-structure.js"
-    "skills/markdown-formatter/scripts/check-fences.js"
-    "skills/markdown-formatter/scripts/check-tables.js"
-    "skills/markdown-formatter/scripts/check-pipes.js"
+    "SKILL.md"
+    "src/index.js"
+    "src/format-content.mjs"
+    "guard/check-structure.js"
+    "guard/check-fences.js"
+    "guard/check-tables.js"
+    "guard/check-pipes.js"
 )
 
 # Define dev-only paths that MUST NOT appear in staged payload
@@ -116,7 +116,7 @@ cd "${STAGE_DIR}"
 
 # Make the index.js executable. The staged skill itself must not contain
 # node_modules or any external formatter binary.
-chmod +x skills/markdown-formatter/src/index.js
+chmod +x src/index.js
 
 FIXTURE_DIR="$(mktemp -d)"
 trap 'rm -rf "$FIXTURE_DIR"' EXIT
@@ -162,42 +162,42 @@ cat > "$INLINE_PIPE_FIXTURE" <<'EOF'
 | `cat access.log | grep 500` | Pipeline example |
 EOF
 
-if ./skills/markdown-formatter/src/index.js --help > /dev/null 2>&1; then
+if ./src/index.js --help > /dev/null 2>&1; then
     echo "✓ Staged index.js --help executed successfully"
 else
     echo "❌ FAILED: Could not execute staged index.js --help"
     exit 1
 fi
 
-if ./skills/markdown-formatter/src/index.js --doctor; then
+if ./src/index.js --doctor; then
     echo "✓ Staged --doctor succeeded"
 else
     echo "❌ FAILED: Staged --doctor failed"
     exit 1
 fi
 
-if ./skills/markdown-formatter/src/index.js --fences "$VALID_FIXTURE"; then
+if ./src/index.js --fences "$VALID_FIXTURE"; then
     echo "✓ Staged --fences succeeded"
 else
     echo "❌ FAILED: Staged --fences failed"
     exit 1
 fi
 
-if ./skills/markdown-formatter/src/index.js --validate "$VALID_FIXTURE"; then
+if ./src/index.js --validate "$VALID_FIXTURE"; then
     echo "✓ Staged --validate succeeded"
 else
     echo "❌ FAILED: Staged --validate failed"
     exit 1
 fi
 
-if ./skills/markdown-formatter/src/index.js --check "$VALID_FIXTURE"; then
+if ./src/index.js --check "$VALID_FIXTURE"; then
     echo "✓ Staged --check succeeded"
 else
     echo "❌ FAILED: Staged --check failed"
     exit 1
 fi
 
-if ./skills/markdown-formatter/src/index.js --fix "$DOUBLE_PIPE_FIXTURE" > "$FIXTURE_DIR/double-pipe.out" 2>&1; then
+if ./src/index.js --fix "$DOUBLE_PIPE_FIXTURE" > "$FIXTURE_DIR/double-pipe.out" 2>&1; then
     echo "✓ Staged --fix repaired adjacent table pipes"
 else
     echo "❌ FAILED: Staged --fix should repair adjacent table pipes" >&2
@@ -211,7 +211,7 @@ if ! grep -qi -e "Repaired adjacent pipes" "$FIXTURE_DIR/double-pipe.out"; then
 fi
 
 ORIGINAL_NO_REPAIR_CONTENT="$(cat "$NO_REPAIR_FIXTURE")"
-if ./skills/markdown-formatter/src/index.js --fix --no-repair "$NO_REPAIR_FIXTURE" > "$FIXTURE_DIR/no-repair.out" 2>&1; then
+if ./src/index.js --fix --no-repair "$NO_REPAIR_FIXTURE" > "$FIXTURE_DIR/no-repair.out" 2>&1; then
     echo "❌ FAILED: Staged --no-repair should block adjacent-pipe auto-repair" >&2
     cat "$FIXTURE_DIR/no-repair.out" >&2
     exit 1
@@ -227,7 +227,7 @@ if [[ "$(cat "$NO_REPAIR_FIXTURE")" != "$ORIGINAL_NO_REPAIR_CONTENT" ]]; then
 fi
 echo "✓ Staged --no-repair blocks table auto-repair without mutation"
 
-if ./skills/markdown-formatter/src/index.js --audit-tables "$AUDIT_FIXTURE" > "$FIXTURE_DIR/audit.out" 2>&1; then
+if ./src/index.js --audit-tables "$AUDIT_FIXTURE" > "$FIXTURE_DIR/audit.out" 2>&1; then
     echo "✓ Staged --audit-tables succeeded"
 else
     echo "❌ FAILED: Staged --audit-tables failed" >&2
@@ -243,7 +243,7 @@ if ! grep -qi "Table audit:" "$FIXTURE_DIR/audit.out" || \
 fi
 
 ORIGINAL_INLINE_PIPE_CONTENT="$(cat "$INLINE_PIPE_FIXTURE")"
-if ./skills/markdown-formatter/src/index.js --fix "$INLINE_PIPE_FIXTURE" > "$FIXTURE_DIR/inline-pipe.out" 2>&1; then
+if ./src/index.js --fix "$INLINE_PIPE_FIXTURE" > "$FIXTURE_DIR/inline-pipe.out" 2>&1; then
     echo "❌ FAILED: Staged --fix should block inline-code table pipes" >&2
     cat "$FIXTURE_DIR/inline-pipe.out" >&2
     exit 1
@@ -260,7 +260,7 @@ fi
 
 echo "✓ Staged --fix blocks inline-code table pipes before formatter"
 
-if ./skills/markdown-formatter/src/index.js --guard "$GUARD_FIXTURE"; then
+if ./src/index.js --guard "$GUARD_FIXTURE"; then
     echo "✓ Staged --guard succeeded"
 else
     echo "❌ FAILED: Staged --guard failed"
@@ -284,7 +284,7 @@ cat > "$DRIFT_FIXTURE" <<'EOF'
 | Erin  | 22 |
 EOF
 ORIGINAL_DRIFT_CONTENT="$(cat "$DRIFT_FIXTURE")"
-if ./skills/markdown-formatter/src/index.js --fix --guard "$DRIFT_FIXTURE" > "$FIXTURE_DIR/drift.out" 2>&1; then
+if ./src/index.js --fix --guard "$DRIFT_FIXTURE" > "$FIXTURE_DIR/drift.out" 2>&1; then
     echo "❌ FAILED: Staged --guard unexpectedly accepted structural drift fixture"
     cat "$FIXTURE_DIR/drift.out"
     exit 1

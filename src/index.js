@@ -28,10 +28,10 @@ const { join, resolve, extname, basename } = require("path");
 const { tmpdir } = require("os");
 
 const { formatContent } = require("./format-content.mjs");
-const { splitTableCells, splitTableCellsForStyle, isPotentialTableRow, isTableBodyRowForStyle, isDelimiterLine, getFenceBoundary, hasUnclosedFence, tableRowHasInlineCodePipe, validateTables } = require('../scripts/check-tables.js');
-const { detectAdjacentPipes, validatePipes } = require('../scripts/check-pipes.js');
-const { validateFences } = require('../scripts/check-fences.js');
-const { buildSnapshot, validateStructure, loadSnapshot, saveSnapshot, compareSnapshots } = require('../scripts/check-structure.js');
+const { splitTableCells, splitTableCellsForStyle, isPotentialTableRow, isTableBodyRowForStyle, isDelimiterLine, getFenceBoundary, hasUnclosedFence, tableRowHasInlineCodePipe, validateTables } = require('../guard/check-tables.js');
+const { detectAdjacentPipes, validatePipes } = require('../guard/check-pipes.js');
+const { validateFences } = require('../guard/check-fences.js');
+const { buildSnapshot, validateStructure, loadSnapshot, saveSnapshot, compareSnapshots } = require('../guard/check-structure.js');
 
 const SKILL_DIR = resolve(__dirname, "..");
 const FORMATTER_MODULE = join(SKILL_DIR, "src", "format-content.mjs");
@@ -107,10 +107,10 @@ function runDoctor(options = {}) {
     join(SKILL_DIR, "SKILL.md"),
     join(SKILL_DIR, "src", "index.js"),
     FORMATTER_MODULE,
-    join(SKILL_DIR, "scripts", "check-structure.js"),
-    join(SKILL_DIR, "scripts", "check-fences.js"),
-    join(SKILL_DIR, "scripts", "check-tables.js"),
-    join(SKILL_DIR, "scripts", "check-pipes.js"),
+    join(SKILL_DIR, "guard", "check-structure.js"),
+    join(SKILL_DIR, "guard", "check-fences.js"),
+    join(SKILL_DIR, "guard", "check-tables.js"),
+    join(SKILL_DIR, "guard", "check-pipes.js"),
   ];
 
   let ok = true;

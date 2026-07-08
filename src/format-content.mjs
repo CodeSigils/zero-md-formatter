@@ -7,7 +7,7 @@ const {
   isTableBodyRowForStyle,
   isDelimiterLine,
   getFenceBoundary,
-} = require("../scripts/check-tables.js");
+} = require("../guard/check-tables.js");
 
 function normalizeLineEndings(content) {
   return content.replace(/\r\n?/g, "\n");

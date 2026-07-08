@@ -16,7 +16,7 @@ const { join, resolve, extname, relative } = require('path');
 const { readdirSync, statSync, existsSync } = require('fs');
 
 const ROOT = resolve(__dirname, '..');
-const SKILL_DIR = resolve(ROOT, 'skills/markdown-formatter');
+const SKILL_DIR = resolve(ROOT, '.');
 const DEFAULT_TARGETS = [
   'test/fixtures/current',
   'test/fixtures/format-edge-cases',
@@ -64,7 +64,7 @@ function collectFiles(targets) {
 }
 
 function runCheck(check, file) {
-  const scriptPath = join(SKILL_DIR, 'scripts', `${check.name}.js`);
+  const scriptPath = join(SKILL_DIR, 'guard', `${check.name}.js`);
   const result = spawnSync(process.execPath, [scriptPath, ...check.args, file], { encoding: 'utf8' });
   if (result.error) {
     return {

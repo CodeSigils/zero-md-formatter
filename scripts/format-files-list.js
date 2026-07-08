@@ -11,7 +11,7 @@
 const FORMAT_FILES = [
   "README.md",
   "SECURITY.md",
-  "skills/markdown-formatter/SKILL.md",
+  "SKILL.md",
 ];
 
 module.exports = FORMAT_FILES;

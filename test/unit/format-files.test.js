@@ -32,7 +32,7 @@ describe("format-files.js", () => {
       nodePath: "node-bin",
       cli: "formatter-cli",
       cwd: "repo-root",
-      formatFiles: ["README.md", "skills/markdown-formatter/SKILL.md"],
+      formatFiles: ["README.md", "SKILL.md"],
       spawn(command, args, options) {
         call = { command, args, options };
         return { status: 0 };
@@ -42,7 +42,7 @@ describe("format-files.js", () => {
     assert.equal(status, 0);
     assert.deepStrictEqual(call, {
       command: "node-bin",
-      args: ["formatter-cli", "--check", "README.md", "skills/markdown-formatter/SKILL.md"],
+      args: ["formatter-cli", "--check", "README.md", "SKILL.md"],
       options: {
         cwd: "repo-root",
         encoding: "utf8",

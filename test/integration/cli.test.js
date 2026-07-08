@@ -5,7 +5,7 @@ const { join, resolve } = require('node:path');
 const { tmpdir } = require('node:os');
 
 const ROOT = resolve(__dirname, '../..');
-const CLI = join(ROOT, 'skills/markdown-formatter/src/index.js');
+const CLI = join(ROOT, 'src/index.js');
 const { main } = require(CLI);
 
 function runCli(args, options = {}) {

@@ -1,22 +1,23 @@
 {
-  "name": "agents-markdown-formatter",
-  "version": "1.3.0",
-  "description": "Zero-dependency GFM and MDX formatter skill for AI-agent-authored Markdown, with table, pipe, and fence guards",
-  "private": true,
+  "name": "zero-md-formatter",
+  "version": "1.4.0",
+  "description": "Zero-dependency GFM and MDX formatter with structural guardrails — optimized for AI-agent workflows",
+  "private": false,
   "keywords": [
     "markdown",
     "markdown-formatter",
     "gfm",
     "github-flavored-markdown",
     "mdx",
-    "ai-agents",
-    "agent-tools",
-    "hermes-skill",
-    "documentation",
+    "zero-dependency",
+    "cli",
     "formatter",
     "guardrails",
     "tables",
-    "fenced-code-blocks"
+    "fenced-code-blocks",
+    "ai-agents",
+    "agent-tools",
+    "hermes-skill"
   ],
   "homepage": "https://github.com/CodeSigils/agents-markdown-formatter#readme",
   "bugs": {
@@ -26,6 +27,16 @@
     "type": "git",
     "url": "git+https://github.com/CodeSigils/agents-markdown-formatter.git"
   },
+  "license": "MIT",
+  "files": [
+    "src/",
+    "guard/",
+    "SKILL.md"
+  ],
+  "bin": {
+    "mdfmt": "src/index.js"
+  },
+  "main": "src/format-content.mjs",
   "scripts": {
     "test": "node scripts/check-all.js && node --test test/unit/*.test.js && node test/integration/cli.test.js && node scripts/check-consistency.js",
     "test:structural": "node scripts/check-all.js",
@@ -37,7 +48,8 @@
     "format:check": "node scripts/format-files.js --check",
     "verify": "node scripts/format-files.js --verify",
     "release": "bash scripts/release.sh",
-    "prepare": "git config core.hooksPath .githooks"
+    "prepare": "git config core.hooksPath .githooks",
+    "prepublishOnly": "npm run format:check && npm test"
   },
   "engines": {
     "node": ">=24"

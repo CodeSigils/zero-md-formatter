@@ -1,7 +1,7 @@
 ---
 name: markdown-formatter
 description: "Zero-dependency GFM and MDX formatter with table, pipe, and fence guards for AI-agent-authored Markdown"
-version: 1.3.0
+version: 1.4.0
 ---
 
 ## Scope
@@ -41,21 +41,32 @@ Guard-owned behavior:
 ## Usage
 
 ```bash
-node <skill-dir>/src/index.js [options] <path...>
+node src/index.js [options] <path...>
+# or via npm global install:
+mdfmt [options] <path...>
 ```
 
-Where `<skill-dir>` resolves to your agent's skill directory per platform:
+Where `<skill-dir>` resolves to your agent's skill directory, or point it at
+the repo root (where `src/index.js` lives):
 
 | Platform                | Skill directory                        | Install command                                                                 |
 | ----------------------- | -------------------------------------- | ------------------------------------------------------------------------------- |
 | Hermes Agent            | `~/.hermes/skills/markdown-formatter/` | `hermes skills install CodeSigils/agents-markdown-formatter/markdown-formatter` |
-| Claude Code             | `.claude/skills/markdown-formatter/`   | `cp -r skills/markdown-formatter .claude/skills/`                               |
-| Codex CLI               | `~/.codex/skills/markdown-formatter/`  | `cp -r skills/markdown-formatter ~/.codex/skills/`                              |
-| Gemini CLI / `.agents/` | `.agents/skills/markdown-formatter/`   | `cp -r skills/markdown-formatter .agents/skills/`                               |
-| OpenCode                | `.opencode/skills/markdown-formatter/` | `cp -r skills/markdown-formatter .opencode/skills/`                             |
-| Source checkout         | `skills/markdown-formatter/` (in repo) | `git clone`                                                                     |
+| npm global install      | npm package root                       | `npm install -g zero-md-formatter`                                              |
+| Claude Code             | `.claude/skills/markdown-formatter/`   | `npm install -g zero-md-formatter`; or `cp` the package root                    |
+| Codex CLI               | `~/.codex/skills/markdown-formatter/`  | `npm install -g zero-md-formatter`                                              |
+| Gemini CLI / `.agents/` | `.agents/skills/markdown-formatter/`   | `npm install -g zero-md-formatter`                                              |
+| OpenCode                | `.opencode/skills/markdown-formatter/` | `npm install -g zero-md-formatter`                                              |
+| Source checkout         | repo root (`src/index.js` directly)    | `git clone` + `node src/index.js --fix README.md`                               |
 
-The CLI is a standalone Node.js module — it has no runtime dependencies and does not require any agent platform to function. Install it wherever Node.js >=24 is available and point `<skill-dir>` at the directory containing `src/index.js`.
+The CLI is a standalone Node.js module — it has no runtime dependencies and does
+not require any agent platform to function. Install it wherever Node.js >=24 is
+available. The binary name `mdfmt` is available when installed via npm global
+install.
+
+Note: additional platforms (Claude Code, Gemini CLI, OpenCode) are supported
+via npm global install of `zero-md-formatter`, providing access to the `mdfmt`
+binary. See the README for details on per-platform auto-wiring.
 
 ### Options
 
@@ -93,7 +104,8 @@ Fence validation is structural, not style-only:
 
 ## Table and pipe safety policy
 
-Table and pipe safety is enforced by guard scripts alongside the formatter:
+Table and pipe safety is enforced by guard scripts alongside the formatter
+(located in `guard/`):
 
 - `check-tables.js` enforces formatter-safe table column counts and pipe consistency, including unescaped pipes inside
   inline code spans that would be split as table delimiters. It is stricter than GFM body-row parsing because
@@ -144,21 +156,28 @@ Agents should run the Markdown formatter after creating or editing Markdown file
 Format with rollback-safe structural guards:
 
 ```bash
-node skills/markdown-formatter/src/index.js --fix --guard README.md
+node src/index.js --fix --guard README.md
+# or with npm global install:
+mdfmt --fix --guard README.md
 ```
 
 Validate structure without formatting:
 
 ```bash
-node skills/markdown-formatter/src/index.js --validate --all docs/
+node src/index.js --validate --all docs/
+# or:
+mdfmt --validate --all docs/
 ```
 
 Diagnose installed readiness:
 
 ```bash
-node skills/markdown-formatter/src/index.js --doctor
+node src/index.js --doctor
+# or:
+mdfmt --doctor
 ```
 
 ## References
 
-- Source repository and maintenance docs: https://github.com/CodeSigils/agents-markdown-formatter
+- Source repository: https://github.com/CodeSigils/agents-markdown-formatter
+- npm package: `zero-md-formatter` (`npm install -g zero-md-formatter`)

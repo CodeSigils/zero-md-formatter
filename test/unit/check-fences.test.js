@@ -1,6 +1,6 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
-const { validateFences } = require('../../skills/markdown-formatter/scripts/check-fences.js');
+const { validateFences } = require('../../guard/check-fences.js');
 
 describe('check-fences.js unit tests', () => {
   it('accepts blank fences and nested shorter fences inside longer fences', () => {

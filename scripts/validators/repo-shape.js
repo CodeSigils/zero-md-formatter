@@ -21,13 +21,13 @@ const PLAN_EXPECTED_REPO_SHAPE = new Set([
   "scripts/check-consistency.js",
   "scripts/release.sh",
   "scripts/staged-install-verify.sh",
-  "skills/markdown-formatter/SKILL.md",
-  "skills/markdown-formatter/src/index.js",
-  "skills/markdown-formatter/src/format-content.mjs",
-  "skills/markdown-formatter/scripts/check-fences.js",
-  "skills/markdown-formatter/scripts/check-structure.js",
-  "skills/markdown-formatter/scripts/check-tables.js",
-  "skills/markdown-formatter/scripts/check-pipes.js",
+  "SKILL.md",
+  "src/index.js",
+  "src/format-content.mjs",
+  "guard/check-fences.js",
+  "guard/check-structure.js",
+  "guard/check-tables.js",
+  "guard/check-pipes.js",
   "test/",
 ]);
 
@@ -35,7 +35,6 @@ const HISTORICAL_LINT_ARTIFACTS = new Set([
   "AGENTS.md",
   "CHANGELOG.md",
   ".oxfmtrc.json",
-  "skills/markdown-formatter/.oxfmtrc.json",
   "lint.js",
   "mdformat.js",
   "post-write.js",
@@ -47,8 +46,8 @@ const HISTORICAL_LINT_ARTIFACTS = new Set([
 ]);
 
 const PAYLOAD_PREFIXES = [
-  "skills/markdown-formatter/src/",
-  "skills/markdown-formatter/scripts/",
+  "src/",
+  "guard/",
 ];
 
 const KNOWN_PAYLOAD_CHECKS = new Set([

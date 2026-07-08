@@ -12,7 +12,7 @@ const {
   normalizeTableSpacing,
   auditTables,
   hasTableWithEmptyCells,
-} = require('../../skills/markdown-formatter/src/index.js');
+} = require('../../src/index.js');
 
 describe('formatter CLI helper unit tests', () => {
   function collectDoctor(options) {
@@ -195,7 +195,7 @@ describe('repairTableColumns', () => {
     assert.equal(pipeCount0, 4, 'header should have 4 pipes for 3 cols');
     assert.equal(pipeCount2, 4, 'data row should have 4 pipes for 3 cols');
     // Verify it passes structural validation
-    const { validateTables } = require('../../skills/markdown-formatter/scripts/check-tables.js');
+    const { validateTables } = require('../../guard/check-tables.js');
     const errors = validateTables(result);
     assert.deepStrictEqual(errors, [], 'repaired table should have no structural violations');
   });
@@ -243,7 +243,7 @@ describe('repairTableColumns', () => {
       '| 5 | 6 |',
     ].join('\n');
     const result = repairTableColumns(input);
-    const { splitTableCells } = require('../../skills/markdown-formatter/scripts/check-tables.js');
+    const { splitTableCells } = require('../../guard/check-tables.js');
     const lines = result.split('\n');
     for (let i = 2; i <= 4; i++) {
       const cells = splitTableCells(lines[i]);
@@ -286,7 +286,7 @@ describe('repairTableColumns', () => {
       'data 1 | data 2 |',   // no leading |, missing last col
     ].join('\n');
     const result = repairTableColumns(input);
-    const { splitTableCells: stc } = require('../../skills/markdown-formatter/scripts/check-tables.js');
+    const { splitTableCells: stc } = require('../../guard/check-tables.js');
     const cells = stc(result.split('\n')[2]);
     assert.equal(cells.length, 3, 'data row should be padded to 3 cells');
     assert.equal(cells[2], '', 'padded cell should be empty');
@@ -304,7 +304,7 @@ describe('repairTableColumns', () => {
     const result = repairTableColumns(input);
     const lines = result.split('\n');
     // Row 5 (index 5) is the short one: "|| 3 ||" → should be padded
-    const { splitTableCells: stc } = require('../../skills/markdown-formatter/scripts/check-tables.js');
+    const { splitTableCells: stc } = require('../../guard/check-tables.js');
     const cells = stc(lines[5]);
     assert.equal(cells.length, 4, 'short row should be padded to 4 cells');
     assert.equal(cells[2], '', 'padded cell should be empty');
@@ -312,7 +312,7 @@ describe('repairTableColumns', () => {
 });
 
 describe('repairAdjacentPipes', () => {
-  const { repairAdjacentPipes } = require('../../skills/markdown-formatter/src/index.js');
+  const { repairAdjacentPipes } = require('../../src/index.js');
 
   it('returns original content when no adjacent pipes are present', () => {
     const input = '# Hello\n\n| A | B |\n|---|---|\n| 1 | 2 |\n';

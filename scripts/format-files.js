@@ -18,7 +18,7 @@ const { resolve } = require("path");
 const FORMAT_FILES = require("./format-files-list");
 
 const ROOT = resolve(__dirname, "..");
-const CLI = resolve(ROOT, "skills/markdown-formatter/src/index.js");
+const CLI = resolve(ROOT, "src/index.js");
 
 function runFormatFiles(argv = process.argv.slice(2), options = {}) {
   const {
