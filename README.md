@@ -132,7 +132,7 @@ Reference spec for users and agents: [GitHub Flavored Markdown Spec](https://git
 - `check-tables.js` enforces formatter-safe table column counts and pipe consistency, including unescaped pipes inside inline code spans. It is stricter than GFM body-row parsing because autonomous formatting should not guess table intent.
 - `check-pipes.js` detects adjacent pipes (`||`) in table rows, which create valid empty cells per GFM. Write modes (`--fix`, `--guard`, default) repair them by inserting a space between the pipes (`| |`), preserving empty-cell semantics. Read-only modes (`--check`, `--dry-run`, `--validate`) block with a clear error.
 - Empty-cell tables that remain ambiguous are preserved by skipping the full formatter pass after safety repairs.
-- All CLI modes detect unclosed fences before table/pipe checks.
+- All CLI modes run pipe-safety preflight checks before table operations. When unclosed fences are detected, the CLI warns that table and pipe checks are unreliable and skips them while continuing with fence validation and formatting.
 
 ## Hermes auto-wiring (post-write hook)
 
