@@ -245,7 +245,17 @@ fi
 CURRENT_HIGHEST_TAG="$(git tag -l 'v*' --sort=-version:refname | head -1 || true)"
 if [[ -n "${CURRENT_HIGHEST_TAG}" ]]; then
   CURRENT_HIGHEST_VER="${CURRENT_HIGHEST_TAG#v}"
-  if printf '%s\n%s\n' "${CURRENT_HIGHEST_VER}" "${VERSION}" | sort -CV 2>/dev/null; then
+  # Compare versions: forward release = --latest, backfill = --latest=false
+  # Uses Node instead of sort -V (GNU-only) for macOS portability
+  if node -e "
+var v = '${VERSION}'.split('.').map(Number);
+var h = '${CURRENT_HIGHEST_VER}'.split('.').map(Number);
+process.exit(
+  v[0] > h[0] ||
+  (v[0] === h[0] && v[1] > h[1]) ||
+  (v[0] === h[0] && v[1] === h[1] && v[2] >= h[2]) ? 0 : 1
+);
+" 2>/dev/null; then
     LATEST_FLAG="--latest"
   else
     LATEST_FLAG="--latest=false"
