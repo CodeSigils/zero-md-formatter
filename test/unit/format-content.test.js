@@ -151,4 +151,11 @@ describe('format-content micro-formatter', () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  it('normalizes CRLF line endings to LF', () => {
+    const crlf = '| A | B |\r\n| --- | --- |\r\n| 1 | 2 |\r\n';
+    const result = formatContent(crlf);
+    assert.doesNotMatch(result, /\r\n/, 'CRLF should be converted to LF');
+    assert.match(result, /\n$/, 'should end with LF newline');
+  });
 });
