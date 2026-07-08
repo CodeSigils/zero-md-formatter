@@ -1,6 +1,7 @@
 ---
 name: markdown-formatter
 description: "Zero-dependency GFM and MDX formatter with table, pipe, and fence guards for AI-agent-authored Markdown"
+version: 1.3.0
 ---
 
 ## Scope

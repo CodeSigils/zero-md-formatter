@@ -44,6 +44,19 @@ echo "Preparing release ${TAG} ..."
 echo ""
 
 # ---------------------------------------------------------------------------
+# Precondition 0: verify SKILL.md frontmatter version matches package.json
+# ---------------------------------------------------------------------------
+info "Checking SKILL.md version alignment ..."
+SKILL_MD_VERSION="$(grep '^version:' skills/markdown-formatter/SKILL.md | sed 's/^version: *//; s/^"//; s/"$//; s/^'"'"'//; s/'"'"'$//')"
+if [[ -z "${SKILL_MD_VERSION}" ]]; then
+  die "SKILL.md is missing a 'version:' field in its frontmatter. Add: version: ${VERSION}"
+fi
+if [[ "${SKILL_MD_VERSION}" != "${VERSION}" ]]; then
+  die "SKILL.md version \"${SKILL_MD_VERSION}\" != package.json version \"${VERSION}\""
+fi
+echo "  ✓ SKILL.md version matches (${SKILL_MD_VERSION})"
+
+# ---------------------------------------------------------------------------
 # Precondition 1: clean working tree
 # ---------------------------------------------------------------------------
 info "Checking working tree ..."
@@ -225,11 +238,29 @@ fi
 # ---------------------------------------------------------------------------
 # Create GitHub Release
 # ---------------------------------------------------------------------------
+
+# Determine whether this is a forward release (should be marked as latest)
+# or a backfill (should NOT steal the latest marker).
+# Compare the new version against the highest existing semver tag.
+CURRENT_HIGHEST_TAG="$(git tag -l 'v*' --sort=-version:refname | head -1 || true)"
+if [[ -n "${CURRENT_HIGHEST_TAG}" ]]; then
+  CURRENT_HIGHEST_VER="${CURRENT_HIGHEST_TAG#v}"
+  if printf '%s\n%s\n' "${CURRENT_HIGHEST_VER}" "${VERSION}" | sort -CV 2>/dev/null; then
+    LATEST_FLAG="--latest"
+  else
+    LATEST_FLAG="--latest=false"
+    warn "Backfill release: ${TAG} (${VERSION}) is older than existing tag ${CURRENT_HIGHEST_TAG}. Not marking as latest."
+  fi
+else
+  LATEST_FLAG="--latest"
+fi
+
 echo "Creating GitHub Release ${TAG} ..."
 gh release create "${TAG}" \
   --verify-tag \
   --title "${TAG}" \
-  --notes-file "${BODY_FILE}"
+  --notes-file "${BODY_FILE}" \
+  ${LATEST_FLAG}
 
 echo ""
 echo "Release ${TAG} created and published."

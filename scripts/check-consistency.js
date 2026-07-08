@@ -12,6 +12,7 @@ const { read, extractFrontmatterVersion, extractBadgeVersion, hasDynamicBadge, f
 const { validateCi } = require("./validators/ci");
 const { validateRepoShape } = require("./validators/repo-shape");
 const { validateReleaseDrift } = require("./validators/release-drift");
+const { validateReleaseLatest } = require("./validators/release-latest");
 
 // ---------------------------------------------------------------------------
 // Read all source files once
@@ -45,6 +46,7 @@ function add(result) {
 add(validateCi(files));
 add(validateRepoShape());
 add(validateReleaseDrift(files));
+add(validateReleaseLatest());
 
 // ---------------------------------------------------------------------------
 // Cross-document consistency checks
