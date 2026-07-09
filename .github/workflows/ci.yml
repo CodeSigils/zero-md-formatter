@@ -2,7 +2,12 @@ name: CI
 
 on:
   push:
+    branches: [main]
     tags: ['v*']
+    paths-ignore:
+      - '.gitignore'
+      - '.githooks/**'
+      - '.mdfmtignore'
   pull_request:
     branches: [main]
 
