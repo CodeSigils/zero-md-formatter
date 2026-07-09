@@ -11,7 +11,6 @@
 
 Please report security vulnerabilities privately via:
 
-- **Email**: toolsoftrade.web@gmail.com (GPG key available on GitHub profile)
 - **GitHub Security Advisory**: Use the "Report a vulnerability" tab on this repository
 
 Do not file public issues for security vulnerabilities.
@@ -25,7 +24,7 @@ Do not file public issues for security vulnerabilities.
 ## Security Practices
 
 - **Zero dependencies** — eliminates supply-chain attack surface
-- **Signed commits** — all commits GPG-signed; branch protection enforces this
+- **Signed commits** — all commits SSH-signed; branch protection enforces this
 - **2FA on npm** — publishing requires OTP or granular token
 - **Provenance** — `publishConfig.provenance: true` for CI publishes (GitHub OIDC)
 - **Minimal runtime** — pure Node.js >=24, no native bindings
