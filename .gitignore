@@ -16,6 +16,7 @@ tmp/
 .pnpm-store/
 .yarn/
 .cache/
+*.tgz
 
 # Agent/tool local state
 .agents/
