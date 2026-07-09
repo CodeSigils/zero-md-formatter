@@ -53,6 +53,7 @@
     "format:check": "node scripts/format-files.js --check",
     "verify": "node scripts/format-files.js --verify",
     "release": "bash scripts/release.sh",
+    "version": "node scripts/sync-version.js && git add SKILL.md",
     "prepare": "git config core.hooksPath .githooks",
     "prepublishOnly": "npm run format:check && npm test"
   },

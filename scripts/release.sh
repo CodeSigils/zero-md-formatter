@@ -44,17 +44,29 @@ echo "Preparing release ${TAG} ..."
 echo ""
 
 # ---------------------------------------------------------------------------
-# Precondition 0: verify SKILL.md frontmatter version matches package.json
+# Precondition 0: sync SKILL.md frontmatter version from package.json
 # ---------------------------------------------------------------------------
-info "Checking SKILL.md version alignment ..."
-SKILL_MD_VERSION="$(grep '^version:' SKILL.md | sed 's/^version: *//; s/^"//; s/"$//; s/^'"'"'//; s/'"'"'$//')"
+info "Syncing SKILL.md version to ${VERSION} ..."
+node scripts/sync-version.js
+SKILL_MD_VERSION="$(sed -n 's/^version: *//p' SKILL.md)"
 if [[ -z "${SKILL_MD_VERSION}" ]]; then
-  die "SKILL.md is missing a 'version:' field in its frontmatter. Add: version: ${VERSION}"
+  die "SKILL.md is missing a 'version:' field in its frontmatter."
 fi
-if [[ "${SKILL_MD_VERSION}" != "${VERSION}" ]]; then
-  die "SKILL.md version \"${SKILL_MD_VERSION}\" != package.json version \"${VERSION}\""
+
+# If SKILL.md was modified by the sync, commit it now so the
+# working tree is clean for the preconditions that follow.
+# This handles the manual-bump case (edit package.json directly
+# but forget SKILL.md). When using 'npm version' the version
+# lifecycle script already handles this before release.sh runs.
+if ! git diff --quiet SKILL.md; then
+  git add SKILL.md
+  git commit -m "sync SKILL.md version to ${VERSION}" --no-verify
+  echo "  ✓ SKILL.md synced and committed (version ${SKILL_MD_VERSION})"
+else
+  echo "  ✓ SKILL.md version matches (${SKILL_MD_VERSION})"
 fi
-echo "  ✓ SKILL.md version matches (${SKILL_MD_VERSION})"
+
+echo ""
 
 # ---------------------------------------------------------------------------
 # Precondition 1: clean working tree
