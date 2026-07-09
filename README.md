@@ -77,10 +77,9 @@ node src/index.js --fix --guard README.md
 
 ### What it doesn't do
 
-- **No config file** — no `.prettierrc`, `.markdownlintrc`, or similar. Opinionated defaults only.
+- **No formatting config file** — no `.prettierrc`, `.markdownlintrc`, or similar. No plugin system. Zero runtime dependencies means no extension points.
 - **No dialect extensions** — no Obsidian wiki-links, Mermaid, Pandoc, or frontmatter semantics.
 - **No JSX/MDX validation** — formats Markdown containers only; JSX inside is passed through unchecked.
-- **No plugin system** — zero runtime dependencies means no extension points.
 
 ---
 
@@ -104,6 +103,17 @@ mdfmt [options] <path...>
 | `--audit-tables`  | Print table row cell counts and pipe hazards without writing       |
 | `--no-repair`     | Report repairable table issues instead of modifying them           |
 | `--help`, `-h`    | Display help message                                               |
+
+### File exclusion
+
+Create `.mdfmtignore` in the project root to exclude files from `--all` and explicit path processing. One pattern per line; `#` for comments. Patterns ending with `/` match directory prefixes; `*` matches any non-`/` characters.
+
+```
+# Skip vendored docs and generated output
+vendor/
+docs/generated/
+*.generated.md
+```
 
 ### Examples
 

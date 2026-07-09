@@ -85,6 +85,10 @@ binary. See the README for details on per-platform auto-wiring.
 - `--no-repair`: In write modes, report repairable table issues instead of modifying them
 - `--help`, `-h`: Display help message
 
+### File exclusion
+
+Create `.mdfmtignore` in the agent's working directory to exclude files from `--all` and explicit path processing. One pattern per line; `#` for comments. See README for pattern syntax.
+
 ## Prerequisites
 
 - `node` (>=24)
