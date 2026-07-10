@@ -583,7 +583,7 @@ describe('markdown formatter CLI integration', () => {
     }
   });
 
-  it('--dry-run remains read-only when an unclosed fence is present', () => {
+  it('--dry-run remains read-only and fails when an unclosed fence is present', () => {
     const dir = mkdtempSync(join(tmpdir(), 'markdown-formatter-unclosed-dry-run-'));
     const file = join(dir, 'unclosed-dry-run.md');
     try {
@@ -591,12 +591,14 @@ describe('markdown formatter CLI integration', () => {
       writeFileSync(file, original);
 
       const dryRunResult = runCli(['--dry-run', file]);
-      assert.equal(dryRunResult.status, 0, dryRunResult.stdout + dryRunResult.stderr);
+      assert.notStrictEqual(dryRunResult.status, 0);
+      assert.match(dryRunResult.stdout + dryRunResult.stderr, /Unclosed fence/);
       assert.match(dryRunResult.stdout + dryRunResult.stderr, /Would format/);
       assert.equal(readFileSync(file, 'utf8'), original);
 
       const guardDryRunResult = runCli(['--guard', '--dry-run', file]);
-      assert.equal(guardDryRunResult.status, 0, guardDryRunResult.stdout + guardDryRunResult.stderr);
+      assert.notStrictEqual(guardDryRunResult.status, 0);
+      assert.match(guardDryRunResult.stdout + guardDryRunResult.stderr, /Unclosed fence/);
       assert.match(guardDryRunResult.stdout + guardDryRunResult.stderr, /Would format/);
       assert.equal(readFileSync(file, 'utf8'), original);
       assert.equal(existsSync(`${file}.structure.json`), false);

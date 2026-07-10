@@ -8,16 +8,8 @@ set -euo pipefail
 SOURCE_DIR="${PWD}"
 STAGE_DIR="${SOURCE_DIR}/staged-install"
 
-# Define the exact runtime allowlist (what should be copied)
-RUNTIME_ALLOWLIST=(
-    "SKILL.md"
-    "src/index.js"
-    "src/format-content.mjs"
-    "guard/check-structure.js"
-    "guard/check-fences.js"
-    "guard/check-tables.js"
-    "guard/check-pipes.js"
-)
+# Load the exact runtime allowlist (what should be copied).
+mapfile -t RUNTIME_ALLOWLIST < <(node scripts/runtime-payload.js)
 
 # Define dev-only paths that MUST NOT appear in staged payload
 DEV_ONLY_PATHS=(

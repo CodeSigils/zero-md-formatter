@@ -8,7 +8,7 @@
 
 const { existsSync } = require("fs");
 const { join } = require("path");
-const { ROOT, read, findAllFiles } = require("./common");
+const { ROOT, findAllFiles } = require("./common");
 
 const EXCLUDE_DIRS = new Set(["node_modules", ".git", ".omo", ".open-mem", "format-edge-cases"]);
 
@@ -20,6 +20,7 @@ const PLAN_EXPECTED_REPO_SHAPE = new Set([
   "scripts/check-all.js",
   "scripts/check-consistency.js",
   "scripts/release.sh",
+  "scripts/runtime-payload.js",
   "scripts/staged-install-verify.sh",
   "SKILL.md",
   "src/index.js",

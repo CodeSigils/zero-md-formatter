@@ -8,6 +8,7 @@
 "use strict";
 
 const FORMAT_FILES = require("./format-files-list");
+const RUNTIME_PAYLOAD_FILES = require("./runtime-payload");
 const { read, extractFrontmatterVersion, extractBadgeVersion, hasDynamicBadge, findCliFlags, extractRuntimeNodeMinVersion } = require("./validators/common");
 const { validateCi } = require("./validators/ci");
 const { validateRepoShape } = require("./validators/repo-shape");
@@ -57,15 +58,6 @@ const skillMd = files["SKILL.md"];
 const indexJs = files["src/index.js"];
 const formatContent = files["src/format-content.mjs"];
 const pkgJson = files["package.json"];
-const RUNTIME_PAYLOAD_FILES = [
-  "SKILL.md",
-  "src/index.js",
-  "src/format-content.mjs",
-  "guard/check-structure.js",
-  "guard/check-fences.js",
-  "guard/check-tables.js",
-  "guard/check-pipes.js",
-];
 
 // Node.js runtime min version
 const runtimeMinNodeVersion = indexJs ? extractRuntimeNodeMinVersion(indexJs) : null;

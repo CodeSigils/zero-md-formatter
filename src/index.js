@@ -930,8 +930,9 @@ function processFile(filePath, args) {
     if (args.validate) return runScript("check-structure.js", "--verify", filePath) && runScript("check-fences.js", filePath);
     if (args.verify) return runScript("check-structure.js", "--verify", filePath) && runScript("check-fences.js", filePath) && checkFormatting(filePath) && checkIdempotenceReadOnly(filePath);
     if (args["dry-run"]) {
+      const fencesValid = runScript("check-structure.js", "--verify", filePath) && runScript("check-fences.js", filePath);
       if (!checkFormatting(filePath, { report: false })) console.log(`Would format: ${filePath}`);
-      return true;
+      return fencesValid;
     }
     if (args.guard) {
       if (args.check) return runScript("check-structure.js", "--verify", filePath) && runScript("check-fences.js", filePath) && checkFormatting(filePath);

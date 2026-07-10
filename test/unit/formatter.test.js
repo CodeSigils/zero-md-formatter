@@ -172,6 +172,8 @@ describe('matchesIgnorePattern', () => {
     assert.equal(matchesIgnorePattern('fooxmd', ['*.md']), false);
     assert.equal(matchesIgnorePattern('docs/file+draft.md', ['docs/file+*.md']), true);
     assert.equal(matchesIgnorePattern('docs/filexdraft.md', ['docs/file+*.md']), false);
+    assert.equal(matchesIgnorePattern('docs/file[1].md', ['docs/file[1].md']), true);
+    assert.equal(matchesIgnorePattern('docs/file1.md', ['docs/file[1].md']), false);
   });
 
   it('returns false for empty patterns', () => {
