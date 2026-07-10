@@ -37,7 +37,7 @@ Thumbs.db
 fixtures/work/
 fixtures/results/
 
-# Staged install verification output
+# Legacy staged install verification output
 staged-install/
 
 # User's general temporary notes

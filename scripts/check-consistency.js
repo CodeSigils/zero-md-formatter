@@ -143,8 +143,8 @@ if (pkgJson && skillMd) {
   } catch { /* already handled above */ }
 }
 
-// Staged-install staleness
-const STAGED_DIR = "staged-install";
+// Tap-installable skill payload staleness
+const STAGED_DIR = "skills/markdown-formatter";
 const { readFileSync } = require("fs");
 const { join } = require("path");
 const { ROOT } = require("./validators/common");
@@ -157,7 +157,7 @@ try {
   });
   if (stalePayloadFiles.length > 0) {
     warnings.push(
-      `staged-install/ is stale (${stalePayloadFiles.join(", ")}) — run bash scripts/staged-install-verify.sh to regenerate`
+      `skills/markdown-formatter/ is stale (${stalePayloadFiles.join(", ")}) — run bash scripts/staged-install-verify.sh to regenerate`
     );
   }
 } catch { /* staged dir or files may not exist — not an error */ }

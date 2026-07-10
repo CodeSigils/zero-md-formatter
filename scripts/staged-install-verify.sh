@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-# staged-install-verify.sh - Verify staged runtime allowlist for markdown-formatter skill
+# staged-install-verify.sh - Verify tap-installable runtime allowlist for markdown-formatter skill
 
 set -euo pipefail
 
-# Define source and staging directories
+# Define source and tap-installable skill directories
 SOURCE_DIR="${PWD}"
-STAGE_DIR="${SOURCE_DIR}/staged-install"
+STAGE_DIR="${SOURCE_DIR}/skills/markdown-formatter"
 
 # Load the exact runtime allowlist (what should be copied).
 mapfile -t RUNTIME_ALLOWLIST < <(node scripts/runtime-payload.js)
@@ -17,6 +17,7 @@ DEV_ONLY_PATHS=(
     "scripts/"
     "test/"
     ".github/"
+    "skills/"
     "node_modules/"
     "package.json"
     "package-lock.json"
@@ -29,8 +30,8 @@ DEV_ONLY_PATHS=(
 rm -rf "$STAGE_DIR"
 mkdir -p "$STAGE_DIR"
 
-echo "Staging runtime allowlist..."
-echo "============================"
+echo "Staging runtime allowlist for Hermes tap install..."
+echo "=================================================="
 
 # Copy each item in the allowlist
 for item in "${RUNTIME_ALLOWLIST[@]}"; do
