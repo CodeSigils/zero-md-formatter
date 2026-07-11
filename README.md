@@ -195,34 +195,7 @@ wrapper:
 
 ```bash
 mkdir -p "$HOME/.hermes/scripts"
-cat > "$HOME/.hermes/scripts/check-markdown.sh" <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-
-path="${file_path:-}"
-
-if [ -z "$path" ]; then
-  path="$(
-    node -e '
-      const fs = require("fs");
-      const raw = fs.readFileSync(0, "utf8").trim();
-      if (!raw) process.exit(0);
-      const payload = JSON.parse(raw);
-      process.stdout.write(
-        payload.file_path ||
-        payload.path ||
-        payload.tool_input?.file_path ||
-        payload.tool_input?.path ||
-        ""
-      );
-    '
-  )"
-fi
-
-case "$path" in
-  *.md|*.markdown|*.mdx) mdfmt --check "$path" ;;
-esac
-EOF
+cp scripts/check-markdown.sh "$HOME/.hermes/scripts/"
 chmod +x "$HOME/.hermes/scripts/check-markdown.sh"
 ```
 
@@ -239,8 +212,8 @@ hooks:
 
 This runs `--check` (read-only) on every written Markdown file, blocking pipe
 hazards, fence errors, and formatting drift before they reach git. To
-auto-repair instead, change the wrapper's `mdfmt --check "$path"` line to
-`mdfmt --fix "$path"`.
+auto-repair instead, edit `~/.hermes/scripts/check-markdown.sh` and change
+the `--check` flag to `--fix`.
 </details>
 
 <details>

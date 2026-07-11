@@ -19,6 +19,7 @@ const PLAN_EXPECTED_REPO_SHAPE = new Set([
   "package.json",
   "scripts/check-all.js",
   "scripts/check-consistency.js",
+  "scripts/check-markdown.sh",
   "scripts/release.sh",
   "scripts/runtime-payload.js",
   "scripts/sync-tap-payload.js",
