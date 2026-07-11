@@ -171,6 +171,16 @@ agentskills.io-formatted skills.
 <details>
 <summary><b>Hermes Agent</b></summary>
 
+**Recommended for development — clone the repo and add to `external_dirs`:**
+```yaml
+skills:
+  external_dirs:
+    - /path/to/zero-md-formatter/skills
+```
+Every commit is immediately reflected without reinstalling.
+
+**For end users — install from hub:**
+
 ```bash
 # Add repo as skill tap (one-time), then install
 hermes skills tap add CodeSigils/zero-md-formatter
