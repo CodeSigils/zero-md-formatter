@@ -195,7 +195,8 @@ wrapper:
 
 ```bash
 mkdir -p "$HOME/.hermes/scripts"
-cp scripts/check-markdown.sh "$HOME/.hermes/scripts/"
+curl -sSLo "$HOME/.hermes/scripts/check-markdown.sh" \
+  "https://raw.githubusercontent.com/CodeSigils/zero-md-formatter/main/scripts/check-markdown.sh"
 chmod +x "$HOME/.hermes/scripts/check-markdown.sh"
 ```
 
