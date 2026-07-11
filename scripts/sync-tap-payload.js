@@ -20,7 +20,7 @@ for (const file of RUNTIME_PAYLOAD_FILES) {
   const destination = join(TAP_PAYLOAD_DIR, file);
   mkdirSync(dirname(destination), { recursive: true });
   cpSync(source, destination, { recursive: true });
-  if (file === "src/index.js") {
+  if (file === "src/index.js" || file === "scripts/check-markdown.sh") {
     chmodSync(destination, 0o755);
   }
 }

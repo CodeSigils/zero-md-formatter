@@ -9,6 +9,7 @@ const RUNTIME_PAYLOAD_FILES = [
   "guard/check-fences.js",
   "guard/check-tables.js",
   "guard/check-pipes.js",
+  "scripts/check-markdown.sh",
 ];
 
 module.exports = RUNTIME_PAYLOAD_FILES;

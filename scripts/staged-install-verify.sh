@@ -14,7 +14,6 @@ mapfile -t RUNTIME_ALLOWLIST < <(node scripts/runtime-payload.js)
 # Define dev-only paths that MUST NOT appear in staged payload
 DEV_ONLY_PATHS=(
     "README.md"
-    "scripts/"
     "test/"
     ".github/"
     "skills/"
@@ -69,6 +68,19 @@ done
 if [[ -d "$STAGE_DIR/.git" ]]; then
     echo "❌ VIOLATION: Found .git directory in staged output"
     VIOLATION_FOUND=true
+fi
+
+# Check for unexpected files in scripts/ payload directory
+declare -A PAYLOAD_SCRIPTS
+PAYLOAD_SCRIPTS["check-markdown.sh"]=1
+if [[ -d "$STAGE_DIR/scripts" ]]; then
+    while IFS= read -r -d '' f; do
+        name=$(basename "$f")
+        if [[ -z "${PAYLOAD_SCRIPTS[$name]-}" ]]; then
+            echo "❌ VIOLATION: Unexpected file in scripts/ payload directory: $name"
+            VIOLATION_FOUND=true
+        fi
+    done < <(find "$STAGE_DIR/scripts" -type f -print0)
 fi
 
 if [[ "$VIOLATION_FOUND" == true ]]; then

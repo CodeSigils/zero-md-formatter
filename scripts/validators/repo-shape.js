@@ -32,6 +32,7 @@ const PLAN_EXPECTED_REPO_SHAPE = new Set([
   "skills/markdown-formatter/guard/check-structure.js",
   "skills/markdown-formatter/guard/check-tables.js",
   "skills/markdown-formatter/guard/check-pipes.js",
+  "skills/markdown-formatter/scripts/check-markdown.sh",
   "src/index.js",
   "src/format-content.mjs",
   "guard/check-fences.js",

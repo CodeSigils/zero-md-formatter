@@ -190,14 +190,13 @@ Or run from source (no npm install):
 node src/index.js --fix --guard README.md
 ```
 
-For auto-wiring on every `write_file` or `patch` call, install a small hook
-wrapper:
+For auto-wiring on every `write_file` or `patch` call — the hook script ships with the
+skill. You just need to register it:
 
 ```bash
-mkdir -p "$HOME/.hermes/scripts"
-curl -sSLo "$HOME/.hermes/scripts/check-markdown.sh" \
-  "https://raw.githubusercontent.com/CodeSigils/zero-md-formatter/main/scripts/check-markdown.sh"
-chmod +x "$HOME/.hermes/scripts/check-markdown.sh"
+# The script is already at:
+#   ~/.hermes/skills/markdown-formatter/scripts/check-markdown.sh
+# No download needed.
 ```
 
 Then add the hook to `config.yaml`:
@@ -205,16 +204,17 @@ Then add the hook to `config.yaml`:
 ```yaml
 hooks:
   post_tool_call:
-    - command: ~/.hermes/scripts/check-markdown.sh
+    - command: ~/.hermes/skills/markdown-formatter/scripts/check-markdown.sh
       matcher: write_file
-    - command: ~/.hermes/scripts/check-markdown.sh
+    - command: ~/.hermes/skills/markdown-formatter/scripts/check-markdown.sh
       matcher: patch
 ```
 
 This runs `--check` (read-only) on every written Markdown file, blocking pipe
 hazards, fence errors, and formatting drift before they reach git. To
-auto-repair instead, edit `~/.hermes/scripts/check-markdown.sh` and change
-the `--check` flag to `--fix`.
+auto-repair instead, edit the script at
+`~/.hermes/skills/markdown-formatter/scripts/check-markdown.sh`
+and change the `--check` flag to `--fix`.
 </details>
 
 <details>
