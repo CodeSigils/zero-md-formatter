@@ -1,6 +1,6 @@
 {
   "name": "zero-md-formatter",
-  "version": "1.4.9",
+  "version": "1.4.10",
   "description": "Zero-dependency GFM and MDX formatter with structural guardrails — optimized for AI-agent workflows",
   "private": false,
   "keywords": [
