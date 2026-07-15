@@ -220,11 +220,9 @@ hooks:
       matcher: patch
 ```
 
-This runs `--check` (read-only) on every written Markdown file, blocking pipe
-hazards, fence errors, and formatting drift before they reach git. To
-auto-repair instead, edit the script at
-`~/.hermes/skills/markdown-formatter/scripts/check-markdown.sh`
-and change the `--check` flag to `--fix`.
+This runs `--fix --guard` on every written Markdown file — formatting, repairing
+adjacent pipes, normalizing fences, aligning tables, and rolling back on
+structural drift before they reach git.
 </details>
 
 <details>

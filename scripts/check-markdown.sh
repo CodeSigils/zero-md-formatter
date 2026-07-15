@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Hermes shell hook: check Markdown files with mdfmt --check on write_file/patch
+# Hermes shell hook: auto-format Markdown files with mdfmt --fix --guard on write_file/patch
 #
 # Ships with the skill at ~/.hermes/skills/markdown-formatter/scripts/check-markdown.sh
 # Register in Hermes config.yaml hooks block, then this runs automatically.
@@ -16,9 +16,9 @@ case "$file_path" in
 esac
 
 if command -v mdfmt &>/dev/null; then
-  mdfmt --check "$file_path"
+  mdfmt --fix --guard "$file_path"
 elif [[ -f "$HOME/.hermes/skills/markdown-formatter/src/index.js" ]]; then
-  node "$HOME/.hermes/skills/markdown-formatter/src/index.js" --check "$file_path"
+  node "$HOME/.hermes/skills/markdown-formatter/src/index.js" --fix --guard "$file_path"
 else
   echo "[check-markdown] zero-md-formatter not found — skipping check" >&2
 fi
