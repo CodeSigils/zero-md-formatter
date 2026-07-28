@@ -169,9 +169,9 @@ The formatter ships as a standard agentskills-compatible skill via
 [`SKILL.md`](SKILL.md). It works with any agent that supports
 agentskills.io-formatted skills.
 
-The optional [Codex behavioral regression](docs/codex-regression.md) checks
-that an agent both performs guarded formatting and respects a blocking pipe
-hazard. Normal CI runs only its deterministic self-tests.
+The optional [Codex behavioral regression][codex-regression] checks that an
+agent both performs guarded formatting and respects a blocking pipe hazard.
+Normal CI runs only its deterministic self-tests.
 
 ### Install as a skill
 
@@ -385,3 +385,4 @@ field in package.json — `scripts/` is not shipped with npm, except
 MIT
 
 [GFM]: https://github.github.com/gfm/
+[codex-regression]: https://github.com/CodeSigils/zero-md-formatter/blob/main/docs/codex-regression.md
