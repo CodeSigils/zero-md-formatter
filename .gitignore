@@ -3,6 +3,7 @@ node_modules/
 
 # Build, coverage, and generated artifacts
 coverage/
+artifacts/
 dist/
 build/
 tmp/

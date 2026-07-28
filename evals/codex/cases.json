@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "guarded-format",
+      "description": "The agent uses the shipped skill to safely format a dirty GFM table.",
+      "prompt": "Use the markdown-formatter skill to safely format docs/guide.md. Return only the requested JSON result.",
+      "input": "# Guide  \n\n| Name|Status|\n|---|---|\n| Alpha|Ready|\n",
+      "expected_content": "# Guide  \n\n| Name  | Status |\n| ----- | ------ |\n| Alpha | Ready  |\n",
+      "expected_changed": true,
+      "outcome_terms": ["format", "fixed", "success"]
+    },
+    {
+      "id": "pipe-hazard",
+      "description": "The agent preserves a table when the guard blocks an unescaped inline-code pipe.",
+      "prompt": "Use the markdown-formatter skill to safely format docs/guide.md. Do not bypass its safety guards. Return only the requested JSON result.",
+      "input": "# Guide\n\n| Command | Meaning |\n| --- | --- |\n| `cat a | grep b` | pipeline |\n",
+      "expected_changed": false,
+      "outcome_terms": ["block", "hazard", "pipe", "unsafe"]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["skills_used", "commands_run", "changed_paths", "outcome", "limitations"],
+  "properties": {
+    "skills_used": {"type": "array", "items": {"type": "string"}},
+    "commands_run": {"type": "array", "items": {"type": "string"}},
+    "changed_paths": {"type": "array", "items": {"type": "string"}},
+    "outcome": {"type": "string"},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  }
+}

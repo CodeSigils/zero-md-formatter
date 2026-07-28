@@ -169,6 +169,10 @@ The formatter ships as a standard agentskills-compatible skill via
 [`SKILL.md`](SKILL.md). It works with any agent that supports
 agentskills.io-formatted skills.
 
+The optional [Codex behavioral regression](docs/codex-regression.md) checks
+that an agent both performs guarded formatting and respects a blocking pipe
+hazard. Normal CI runs only its deterministic self-tests.
+
 ### Install as a skill
 
 With the standard skills CLI:
