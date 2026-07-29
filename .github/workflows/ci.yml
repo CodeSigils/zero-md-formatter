@@ -40,6 +40,7 @@ jobs:
       - run: bash scripts/staged-install-verify.sh
       - run: git diff --exit-code -- skills/markdown-formatter
       - run: npm audit --audit-level=high
+      - run: npm run verify:urls
 
   publish:
     needs: test

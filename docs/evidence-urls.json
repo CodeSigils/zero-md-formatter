@@ -1,0 +1,37 @@
+{
+  "version": 3,
+  "description": "Machine-readable evidence URLs for zero-md-formatter.",
+  "urls": [
+    {
+      "name": "GitHub Flavored Markdown specification",
+      "url": "https://github.github.com/gfm/",
+      "expected_statuses": [200],
+      "source_section": "README.md",
+      "domain_tag": "markdown",
+      "source_type": "specification",
+      "status": "active",
+      "last_verified": "2026-07-29"
+    },
+    {
+      "name": "zero-md-formatter repository",
+      "url": "https://github.com/CodeSigils/zero-md-formatter",
+      "expected_statuses": [200],
+      "source_section": "skills/markdown-formatter/SKILL.md",
+      "domain_tag": "repository",
+      "source_type": "pinned_snapshot",
+      "status": "active",
+      "last_verified": "2026-07-29"
+    },
+    {
+      "name": "npm package",
+      "url": "https://www.npmjs.com/package/zero-md-formatter",
+      "expected_statuses": [200, 403],
+      "source_section": "README.md",
+      "domain_tag": "distribution",
+      "source_type": "official_docs",
+      "status": "active",
+      "last_verified": "2026-07-29",
+      "notes": "npm may return 403 to automated requests while the package remains public"
+    }
+  ]
+}
