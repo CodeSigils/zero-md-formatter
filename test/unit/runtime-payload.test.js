@@ -7,6 +7,7 @@ describe('runtime payload allowlist', () => {
     assert.deepStrictEqual(runtimePayload, [
       'SKILL.md',
       'src/index.js',
+      'src/repairs.js',
       'src/format-content.mjs',
       'guard/check-structure.js',
       'guard/check-fences.js',

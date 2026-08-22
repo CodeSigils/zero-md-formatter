@@ -4,6 +4,7 @@
 const RUNTIME_PAYLOAD_FILES = [
   "SKILL.md",
   "src/index.js",
+  "src/repairs.js",
   "src/format-content.mjs",
   "guard/check-structure.js",
   "guard/check-fences.js",
