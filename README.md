@@ -396,6 +396,23 @@ field in package.json — `scripts/` is not shipped with npm, except
 
 ---
 
+## Maintaining
+
+- **Evidence URLs** — [`docs/evidence-urls.json`](docs/evidence-urls.json) lists
+  the external references cited by this README and skill. CI fails once any
+  `last_verified` stamp is older than 30 days. Refresh after re-checking the
+  links live:
+
+  ```bash
+  node scripts/verify-urls.mjs --update   # verifies, then stamps today's date
+  ```
+
+- **Consistency gates** — `npm test` runs structural checks (`check-all`),
+  unit + integration suites, `check-consistency`, and behavior self-tests.
+  The pre-commit hook runs the same gate; keep commits green.
+
+---
+
 ## License
 
 MIT
