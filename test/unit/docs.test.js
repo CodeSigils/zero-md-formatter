@@ -61,3 +61,12 @@ it('keeps CI and release safety guarantees documented and wired', () => {
   assert.match(release, /Uncommitted changes.*before running release\.sh/);
   assert.doesNotMatch(release, /git commit -m "sync skill metadata/);
 });
+
+it('documents and configures dependency freshness checks', () => {
+  const dependabot = readFileSync('.github/dependabot.yml', 'utf8');
+  const readme = readFileSync('README.md', 'utf8');
+  assert.match(dependabot, /package-ecosystem: npm/);
+  assert.match(dependabot, /package-ecosystem: github-actions/);
+  assert.match(dependabot, /interval: weekly/);
+  assert.match(readme, /Dependabot checks npm metadata and pinned GitHub Actions weekly/);
+});

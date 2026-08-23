@@ -437,6 +437,13 @@ with `skills/markdown-formatter/`; run this after runtime edits:
 node scripts/sync-tap-payload.js
 ```
 
+### Dependency and action freshness
+
+Dependabot checks npm metadata and pinned GitHub Actions weekly. It groups
+compatible minor/patch npm updates and action updates into focused pull
+requests; CI remains the merge gate. Review major npm updates separately for
+runtime or formatting behavior changes.
+
 ### Evidence URLs
 
 [`docs/evidence-urls.json`](docs/evidence-urls.json) records the external
