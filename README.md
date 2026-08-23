@@ -109,14 +109,28 @@ mdfmt [options] <path...>
 
 ### File exclusion
 
-Create `.mdfmtignore` in the project root to exclude files from `--all` and explicit path processing. One pattern per line; `#` for comments. Patterns ending with `/` match directory prefixes; `*` matches any non-`/` characters.
+Create `.mdfmtignore` in the project root to exclude files from `--all` and explicit path processing. One pattern per line; `#` for comments. Patterns ending with `/` match directory prefixes.
+
+- `*` matches any characters within a single path segment
+- `**` matches across any number of path segments (`docs/**/*.md`, `**/generated/`)
+- Everything else matches literally or as a path prefix
 
 ```
 # Skip vendored docs and generated output
 vendor/
 docs/generated/
 *.generated.md
+docs/**/*.draft.md
+**/internal/
 ```
+
+> Dot-directories are scanned by default as of v1.5.0. Previously hidden folders like `.github/` were always skipped; add them to `.mdfmtignore` to preserve that behavior:
+>
+> ```
+> .github/
+> .agents/
+> .opencode/
+> ```
 
 ### Examples
 
