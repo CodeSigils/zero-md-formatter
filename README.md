@@ -411,6 +411,27 @@ field in package.json — `scripts/` is not shipped with npm, except
   unit + integration suites, `check-consistency`, and behavior self-tests.
   The pre-commit hook runs the same gate; keep commits green.
 
+- **Releases** — feature work must land *before* the version bump: `release.sh`
+  refuses to run unless HEAD touches only version/release files
+  (`package.json`, lockfile, `README.md`, both `SKILL.md` copies). Bump with
+  `npm version <patch|minor|major>` — its lifecycle hooks sync the SKILL.md
+  frontmatter and the skills payload automatically; never hand-edit those.
+  Then push main, wait for green CI, and run `bash scripts/release.sh` — the
+  tag push triggers the irreversible `npm publish --provenance`.
+
+- **Skills mirror** — [`src/index.js`](src/index.js) and
+  [`src/format-content.mjs`](src/format-content.mjs) must stay byte-identical
+  to their copies under [`skills/markdown-formatter/src/`](skills/markdown-formatter/src/);
+  `check-consistency` fails on drift. After editing either file, refresh with:
+
+  ```bash
+  node scripts/sync-tap-payload.js
+  ```
+
+- **Behavior harness** — `test:behavior` in CI only runs self-tests; the live
+  agent evaluation is manual and documented in
+  [`docs/codex-regression.md`](docs/codex-regression.md).
+
 ---
 
 ## License
