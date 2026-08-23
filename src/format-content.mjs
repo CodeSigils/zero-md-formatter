@@ -9,10 +9,27 @@ const {
   getFenceBoundary,
 } = require("../guard/check-tables.js");
 
+/**
+ * Normalize all line endings to Unix-style LF (\n).
+ *
+ * Converts \r\n (Windows) and \r (old Mac) to \n.
+ *
+ * @param {string} content - File text.
+ * @returns {string} Text with LF-only line endings.
+ */
 function normalizeLineEndings(content) {
   return content.replace(/\r\n?/g, "\n");
 }
 
+/**
+ * Strip trailing whitespace from each line.
+ *
+ * Preserves 2+ trailing spaces (Markdown hard line break syntax) and
+ * strips everything else. Blank lines with only spaces are fully cleared.
+ *
+ * @param {string} content - File text.
+ * @returns {string} Text with trailing whitespace removed.
+ */
 function normalizeTrailingWhitespace(content) {
   return content
     .split("\n")
@@ -25,10 +42,26 @@ function normalizeTrailingWhitespace(content) {
     .join("\n");
 }
 
+/**
+ * Ensure content ends with exactly one newline.
+ *
+ * @param {string} content - File text.
+ * @returns {string} Text ending with a single \n.
+ */
 function ensureFinalNewline(content) {
   return content.endsWith("\n") ? content : `${content}\n`;
 }
 
+/**
+ * Replace leading tabs with spaces outside fenced code blocks.
+ *
+ * Lines inside fenced code blocks are left untouched. Tab width is
+ * controlled by options.indentWidth (default: 2).
+ *
+ * @param {string} content - File text.
+ * @param {{indentWidth?: number}} [options={}] - Options. indentWidth sets spaces per tab.
+ * @returns {string} Text with tabs replaced by spaces.
+ */
 function normalizeIndentation(content, options = {}) {
   const indentWidth = options.indentWidth || 2;
   const lines = content.split("\n");
@@ -46,6 +79,16 @@ function normalizeIndentation(content, options = {}) {
   }).join("\n");
 }
 
+/**
+ * Extract a contiguous table block starting at a given line index.
+ *
+ * Returns the header, delimiter, and body rows if the start position is
+ * a valid table (header + delimiter). Returns null otherwise.
+ *
+ * @param {string[]} lines - Content split by newline.
+ * @param {number} start - Line index of the potential table header.
+ * @returns {{rows: string[], end: number}|null} Table rows and the line index after the table, or null.
+ */
 function splitTableBlock(lines, start) {
   const header = lines[start];
   const delimiter = lines[start + 1];
@@ -62,6 +105,12 @@ function splitTableBlock(lines, start) {
   return { rows, end };
 }
 
+/**
+ * Detect alignment markers in a delimiter cell.
+ *
+ * @param {string} cell - A delimiter cell string (e.g. ":---:", "---", ":---").
+ * @returns {{left: boolean, right: boolean}} Whether left/right colons are present.
+ */
 function delimiterInfo(cell) {
   const trimmed = cell.trim();
   const left = trimmed.startsWith(":");
@@ -69,11 +118,28 @@ function delimiterInfo(cell) {
   return { left, right };
 }
 
+/**
+ * Compute the minimum column width for a delimiter cell.
+ *
+ * The minimum is 3 dashes plus 1 for each alignment colon (left, right).
+ *
+ * @param {string} cell - A delimiter cell string.
+ * @returns {number} Minimum width in characters.
+ */
 function minDelimiterWidth(cell) {
   const { left, right } = delimiterInfo(cell);
   return 3 + (left ? 1 : 0) + (right ? 1 : 0);
 }
 
+/**
+ * Format a delimiter cell to a target width with alignment markers.
+ *
+ * Pads dashes to fill the width, preserving leading/trailing colons.
+ *
+ * @param {string} cell - A delimiter cell string.
+ * @param {number} width - Target column width.
+ * @returns {string} Formatted delimiter cell padded to width.
+ */
 function formatDelimiterCell(cell, width) {
   const { left, right } = delimiterInfo(cell);
   const markerWidth = (left ? 1 : 0) + (right ? 1 : 0);
@@ -81,12 +147,30 @@ function formatDelimiterCell(cell, width) {
   return `${left ? ":" : ""}${dashes}${right ? ":" : ""}`.padEnd(width);
 }
 
+/**
+ * Check if any row in a table block contains an empty cell.
+ *
+ * @param {string[]} rows - Table rows (header, delimiter, body).
+ * @param {boolean} hasOuterPipes - Whether rows use leading/trailing pipes.
+ * @returns {boolean} True if any cell is empty after trimming.
+ */
 function hasEmptyCells(rows, hasOuterPipes) {
   return rows.some((row) =>
     splitTableCellsForStyle(row, hasOuterPipes).some((cell) => cell.trim() === "")
   );
 }
 
+/**
+ * Format a table block with aligned columns and consistent spacing.
+ *
+ * Computes per-column widths from content, applies alignment from the
+ * delimiter row (:---, :---:, ---:), and pads cells accordingly. Preserves
+ * the original pipe style (outer pipes or none). Returns rows unchanged
+ * if any row has empty cells (ambiguous column intent).
+ *
+ * @param {string[]} rows - Table rows (header, delimiter, body).
+ * @returns {string[]} Formatted rows with aligned columns.
+ */
 function formatTableRows(rows) {
   const hasLeadingPipe = rows[0].trimStart().startsWith("|") || rows[1].trimStart().startsWith("|");
   const hasTrailingPipe = rows[0].trimEnd().endsWith("|") || rows[1].trimEnd().endsWith("|");
@@ -137,6 +221,15 @@ function formatTableRows(rows) {
   });
 }
 
+/**
+ * Align all GFM tables in content with consistent column widths.
+ *
+ * Scans for table blocks (skipping fenced code blocks), formats each
+ * with aligned columns via formatTableRows, and replaces in-place.
+ *
+ * @param {string} content - File text.
+ * @returns {string} Text with tables aligned.
+ */
 function alignTables(content) {
   const lines = content.split("\n");
   const result = [...lines];
@@ -163,6 +256,15 @@ function alignTables(content) {
   return result.join("\n");
 }
 
+/**
+ * Find the longest consecutive backtick run across all lines.
+ *
+ * Used to determine the minimum fence length that won't conflict
+ * with backticks in the fenced content.
+ *
+ * @param {string[]} lines - Lines of content (typically inside a fence).
+ * @returns {number} Length of the longest backtick run.
+ */
 function maxBacktickRun(lines) {
   let max = 0;
   for (const line of lines) {
@@ -173,11 +275,39 @@ function maxBacktickRun(lines) {
   return max;
 }
 
+/**
+ * Convert tilde fences to backtick fences and normalize fence lengths.
+ *
+ * For each tilde fence pair (opener/closer), replaces with backtick fences
+ * sized to exceed the longest backtick run inside the block (minimum 3).
+ * Preserves indentation and info string from the original opener.
+ *
+ * @param {string} content - File text.
+ * @returns {string} Text with all fences using backtick style.
+ */
 function normalizeFences(content) {
   const lines = content.split("\n");
   const result = [...lines];
 
   for (let i = 0; i < lines.length; i++) {
+    // Backtick fences are preserved verbatim. Skip the entire block so
+    // literal ~~~ runs inside them are never mistaken for fence openers
+    // and converted (which would corrupt the surrounding structure).
+    const btOpener = lines[i].match(/^( {0,3})(`{3,})[^\n]*$/);
+    if (btOpener) {
+      const btLength = btOpener[2].length;
+      let j = i + 1;
+      while (j < lines.length) {
+        const btCloser = lines[j].match(/^( {0,3})`{3,}\s*$/);
+        if (btCloser && lines[j].trim().length >= btLength) break;
+        j++;
+      }
+      // Unclosed fence: consume the rest of the document untouched
+      // (write modes reject unclosed fences during preflight anyway).
+      i = j;
+      continue;
+    }
+
     const opener = lines[i].match(/^( {0,3})~{3,}([^\n]*)$/);
     if (!opener) continue;
 

@@ -99,9 +99,18 @@ describe('format-content micro-formatter', () => {
   });
 
   it('normalizes tilde fences and escalates backticks for nested content', () => {
-    const input = ['~~~~md', '```text', 'inner', '```', '~~~~', ''].join('\n');
-
+    const input = ['~~~md', '```text', 'inner', '```', '~~~', ''].join('\n');
     assert.equal(normalizeFences(input), ['````md', '```text', 'inner', '```', '````', ''].join('\n'));
+  });
+
+  it('preserves literal ~~~ runs inside backtick fences', () => {
+    const input = ['# Demo', '', '```text', '~~~', 'not a fence', '~~~', '```', ''].join('\n');
+    assert.equal(normalizeFences(input), input);
+  });
+
+  it('still converts tilde fences that contain backtick fences', () => {
+    const input = ['~~~', '```text', 'inner', '```', '~~~', ''].join('\n');
+    assert.equal(normalizeFences(input), ['````', '```text', 'inner', '```', '````', ''].join('\n'));
   });
 
   it('formatContent is idempotent for representative fixtures', () => {

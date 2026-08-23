@@ -176,6 +176,70 @@ describe('matchesIgnorePattern', () => {
     assert.equal(matchesIgnorePattern('docs/file1.md', ['docs/file[1].md']), false);
   });
 
+  it('matches ** across path segments', () => {
+    assert.equal(matchesIgnorePattern('docs/a/b.md', ['docs/**/*.md']), true);
+    assert.equal(matchesIgnorePattern('docs/b.md', ['docs/**/*.md']), true);
+    assert.equal(matchesIgnorePattern('other/b.md', ['docs/**/*.md']), false);
+    assert.equal(matchesIgnorePattern('a/x/y/deep.md', ['a/**/deep.md']), true);
+    assert.equal(matchesIgnorePattern('a/deep.md', ['a/**/deep.md']), true);
+    assert.equal(matchesIgnorePattern('x/a/deep.md', ['a/**/deep.md']), false);
+  });
+
+  it('matches leading ** against zero or more directories', () => {
+    assert.equal(matchesIgnorePattern('any/nested/tmp.md', ['**/tmp.md']), true);
+    assert.equal(matchesIgnorePattern('tmp.md', ['**/tmp.md']), true);
+    assert.equal(matchesIgnorePattern('any/nested/other.md', ['**/tmp.md']), false);
+    assert.equal(matchesIgnorePattern('anything/at/all.md', ['**']), true);
+  });
+
+  it('matches glob characters in directory prefix patterns', () => {
+    assert.equal(matchesIgnorePattern('build-out/x.md', ['build*/']), true);
+    assert.equal(matchesIgnorePattern('other/x.md', ['build*/']), false);
+    assert.equal(matchesIgnorePattern('a/b/tmp/c.md', ['**/tmp/']), true);
+    assert.equal(matchesIgnorePattern('nested/tmp/c.md', ['**/tmp/']), true);
+    // '?' is a literal character here — only * and ** are glob metachars
+    assert.equal(matchesIgnorePattern('docsX/a.md', ['docs?/']), false);
+    assert.equal(matchesIgnorePattern('docsX/a.md', ['doc*/']), true);
+  });
+
+  it('normalizes Windows separators before matching', () => {
+    assert.equal(matchesIgnorePattern('vendor\\nested\\a.md', ['vendor/']), true);
+    assert.equal(matchesIgnorePattern('build-out\\x.md', ['build*/']), true);
+    assert.equal(matchesIgnorePattern('other\\x.md', ['build*/']), false);
+  });
+
+  it('keeps single * segment-scoped next to ** patterns', () => {
+    assert.equal(matchesIgnorePattern('report.generated.md', ['*.generated.md']), true);
+    assert.equal(matchesIgnorePattern('nested/report.generated.md', ['**/*.generated.md']), true);
+    assert.equal(matchesIgnorePattern('nested/report.generated.md', ['*.generated.md']), false);
+  });
+
+  it('escapes ? and | as literals inside glob segments', () => {
+    assert.equal(matchesIgnorePattern('docs/q?.md', ['docs/q?*.md']), true);
+    assert.equal(matchesIgnorePattern('docs/qX.md', ['docs/q?*.md']), false);
+    assert.equal(matchesIgnorePattern('docs/a|b.md', ['docs/a|*.md']), true);
+    assert.equal(matchesIgnorePattern('docs/aXb.md', ['docs/a|*.md']), false);
+  });
+
+  it('resolveInputFiles scans dot-directories and excludes them via ignore patterns', () => {
+    const root = mkdtempSync(join(tmpdir(), 'mdfmtignore-dotdir-'));
+    try {
+      mkdirSync(join(root, '.github'));
+      writeFileSync(join(root, '.github', 'ci.md'), '# CI\n');
+      writeFileSync(join(root, 'README.md'), '# Readme\n');
+
+      const scanned = resolveInputFiles([root], true, []);
+      assert.equal(scanned.length, 2);
+      assert(scanned.some((f) => f.includes(join('.github', 'ci.md'))));
+
+      const excluded = resolveInputFiles([root], true, ['.github/']);
+      assert.equal(excluded.length, 1);
+      assert(!excluded.some((f) => f.includes('.github')));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('returns false for empty patterns', () => {
     assert.equal(matchesIgnorePattern('anything.md', []), false);
     assert.equal(matchesIgnorePattern('', []), false);

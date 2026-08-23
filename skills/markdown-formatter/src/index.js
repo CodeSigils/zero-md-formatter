@@ -102,7 +102,9 @@ Options:
 File exclusion:
   Create .mdfmtignore in the current directory (one pattern per line,
   # for comments). Patterns ending with / match directories; *
-  matches any characters except /. Used by --all and explicit paths.
+  matches non-/ characters, ** matches any characters including /.
+  node_modules/ and .git/ are always skipped.
+  Used by --all and explicit paths.
 `);
 }
 
@@ -293,9 +295,9 @@ function isMarkdownFile(filePath) {
  * Returns an empty array if the file doesn't exist.
  *
  * Format: one pattern per line, # for comments, blank lines ignored.
- * Patterns ending with / match directories (prefix). Patterns containing *
- * are treated as globs where * matches any non-/ characters.
- * Everything else is an exact path match.
+ * Patterns ending with / match directories (prefix). ** matches any
+ * characters including /; * matches non-/ characters. Everything else
+ * is an exact path match. node_modules/ and .git/ are always skipped.
  *
  * @param {string} cwd Directory to look for .mdfmtignore
  * @returns {string[]} Normalized patterns
@@ -310,6 +312,97 @@ function loadIgnorePatterns(cwd) {
 }
 
 /**
+ * Match a single path segment against a glob segment.
+ *
+ * Supports `*` (matches any characters except `/`).
+ * Literal segments must match exactly.
+ *
+ * @param {string} segment - Path segment to test.
+ * @param {string} glob - Glob segment (may contain `*`).
+ * @returns {boolean} True if the segment matches.
+ */
+function matchSegment(segment, glob) {
+  if (!glob.includes("*")) return segment === glob;
+  // Cache compiled regexes: traversal calls this per segment × pattern × file,
+  // and identical globs repeat across thousands of paths.
+  let re = segmentRegexCache.get(glob);
+  if (!re) {
+    // Convert glob to regex: * → [^/]* (matches within single segment);
+    // all other regex metachars (? included) are escaped so they match literally
+    re = new RegExp(
+      "^" +
+        glob.replace(/[.+^${}()?|[\]\\]/g, "\\$&").replace(/\*/g, "[^/]*") +
+        "$"
+    );
+    segmentRegexCache.set(glob, re);
+  }
+  return re.test(segment);
+}
+
+/** Compiled-segment-regex cache for matchSegment, keyed by glob string. */
+const segmentRegexCache = new Map();
+
+/**
+ * Match a relative path against a single glob pattern using segment-based
+ * two-pointer backtracking (same algorithm as git's wildmatch / picomatch).
+ *
+ * Pattern syntax:
+ * - `*` matches any characters within a single path segment
+ * - `**` matches zero or more path segments
+ * - `/` separates path segments
+ * - All other characters match literally
+ *
+ * @param {string} relPath - Relative path to test (e.g. "docs/foo.md").
+ * @param {string} pattern - Glob pattern (e.g. "*.md", "docs/*.md").
+ * @returns {boolean} True if the path matches the pattern.
+ */
+function globMatch(relPath, pattern) {
+  const pathSegs = relPath.split("/");
+  const globSegs = pattern.split("/");
+  return _globMatchRecursive(pathSegs, globSegs, 0, 0);
+}
+
+/**
+ * Recursive helper for globMatch. Uses two pointers walking through
+ * glob segments and path segments with backtracking on `**`.
+ *
+ * @param {string[]} ps - Path segments.
+ * @param {string[]} gs - Glob segments.
+ * @param {number} pi - Current glob index.
+ * @param {number} pj - Current path index.
+ * @returns {boolean} Match result.
+ */
+function _globMatchRecursive(ps, gs, pi, pj) {
+  // Both exhausted → match
+  if (pi === gs.length && pj === ps.length) return true;
+
+  // Glob exhausted but path remains → no match
+  if (pi === gs.length) return false;
+
+  // Current glob segment is **
+  if (gs[pi] === "**") {
+    // Try consuming zero segments (skip **) or one+ segments
+    // ** at end matches everything remaining
+    if (pi + 1 === gs.length) return true;
+    // Try matching rest of glob against current + each subsequent path position
+    for (let k = pj; k <= ps.length; k++) {
+      if (_globMatchRecursive(ps, gs, pi + 1, k)) return true;
+    }
+    return false;
+  }
+
+  // Path exhausted but glob remains (and it's not **) → no match
+  if (pj === ps.length) return false;
+
+  // Current glob is * or literal — match single segment
+  if (matchSegment(ps[pj], gs[pi])) {
+    return _globMatchRecursive(ps, gs, pi + 1, pj + 1);
+  }
+
+  return false;
+}
+
+/**
  * Check if a relative path matches any ignore pattern.
  *
  * @param {string} relPath Relative path to check
@@ -317,22 +410,22 @@ function loadIgnorePatterns(cwd) {
  * @returns {boolean} True if the path should be ignored
  */
 function matchesIgnorePattern(relPath, patterns) {
+  // Normalize Windows separators so segment matching works cross-platform
+  const posixPath = relPath.replace(/\\/g, "/");
   for (const p of patterns) {
-    // Directory prefix: patterns ending in /
-    if (p.endsWith("/")) {
-      const dir = p.slice(0, -1);
-      if (relPath === dir || relPath.startsWith(dir + "/")) return true;
-      continue;
-    }
-    // Glob with *: match non-/ characters
-    if (p.includes("*")) {
-      const escaped = p.replace(/[|\\{}()[\]^$+?.]/g, "\\$&");
-      const re = new RegExp("^" + escaped.replace(/\*/g, "[^/]*") + "$");
-      if (re.test(relPath)) return true;
+    // Trailing slash marks a directory pattern: it matches the directory
+    // itself plus everything beneath it. Glob characters are honored.
+    const isDirPattern = p.endsWith("/");
+    const pat = isDirPattern ? p.slice(0, -1) : p;
+    if (!pat) continue;
+    if (pat.includes("*")) {
+      if (globMatch(posixPath, pat)) return true;
+      // Directory globs must also cover every file below the matched dir
+      if (isDirPattern && globMatch(posixPath, `${pat}/**`)) return true;
       continue;
     }
     // Exact match or path prefix
-    if (relPath === p || relPath.startsWith(p + "/")) return true;
+    if (posixPath === pat || posixPath.startsWith(pat + "/")) return true;
   }
   return false;
 }
@@ -356,8 +449,9 @@ function isWriteMode(args) {
 /**
  * Recursively find markdown files in a directory, filtering by ignore patterns.
  *
- * Skips node_modules, .git, and dot-directories by default. Applies
- * .mdfmtignore patterns on top.
+ * Skips node_modules and .git (always). Applies .mdfmtignore patterns on
+ * dot-directories and other entries. To exclude dot-directories, add
+ * patterns like .github/ to .mdfmtignore.
  *
  * @param {string} dir - Directory to search.
  * @param {string[]} [ignorePatterns=[]] - Patterns from .mdfmtignore.
@@ -370,7 +464,7 @@ function findMarkdownFiles(dir, ignorePatterns = [], cwd = null) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (!["node_modules", ".git"].includes(entry.name) && !entry.name.startsWith(".")) {
+      if (!["node_modules", ".git"].includes(entry.name)) {
         const rel = relative(base, full);
         if (!matchesIgnorePattern(rel, ignorePatterns)) {
           files.push(...findMarkdownFiles(full, ignorePatterns, base));

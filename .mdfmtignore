@@ -1,10 +1,17 @@
 # .mdfmtignore — files and directories to skip when using --all
 # One pattern per line. Lines starting with # are comments.
 # Patterns ending with / match directory prefixes.
-# Patterns containing * are treated as simple globs where *
-# matches any characters except a path separator (/).
+# * matches any characters within a segment, ** matches zero or more segments.
+# Always-skipped: node_modules/, .git/ (cannot be overridden).
 
 node_modules/
 pack/
 *.structure.json
 *.snap
+
+# Dot-directories (tooling config, not user-authored content)
+.github/
+.agents/
+.opencode/
+.open-mem/
+.omo/
