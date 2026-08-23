@@ -31,6 +31,24 @@ mdfmt --fix README.md
 ```
 > Requires Node.js >=24. Zero *runtime* npm dependencies — no config file, no plugin system.
 
+With pnpm:
+
+```bash
+pnpm add -g zero-md-formatter
+mdfmt --fix README.md
+```
+
+Update an existing global pnpm installation with `pnpm -g update
+zero-md-formatter`. If the global dependency is pinned to an exact version,
+use `pnpm add -g zero-md-formatter@latest` to advance it explicitly.
+
+### Node.js support policy
+
+The package supports the current Node.js 24+ line. CI tests the version declared
+in [`.node-version`](.node-version); newer Node.js majors are supported after
+the CI matrix and compatibility checks pass. Node.js versions below 24 are
+not supported.
+
 ### Use via npx (no install)
 
 ```bash
@@ -437,8 +455,10 @@ Do not use `--update` without a successful live verification.
 
 ### Release process
 
-The current package release is `1.5.1`; the repository tag and npm package are
-published from the same CI-verified tarball.
+The npm and GitHub Release badges above show the current published version.
+Every release tag and npm package is published from the same CI-verified
+tarball. Release notes are maintained in [`CHANGELOG.md`](CHANGELOG.md) and
+the corresponding GitHub Release.
 
 Runtime changes must be merged before the isolated version-bump commit.
 `release.sh` requires a clean tree, synchronized skill metadata, a stable
@@ -458,6 +478,24 @@ bash scripts/release.sh
 The dry run validates all release preconditions without creating a tag,
 pushing, or publishing. Do not run regular `npm version` here because it
 creates a tag before `release.sh` can perform its checks.
+
+#### Release troubleshooting
+
+- If CI fails before publishing, fix the failing commit, push it, and rerun
+  the release preflight.
+- If a tag was created but npm publication failed, confirm the version is not
+  present with `npm view zero-md-formatter versions --json`. Remove the
+  unpublished GitHub Release and remote tag, then rerun `release.sh` from a
+  clean, tested commit.
+- Verify the result from both clients:
+
+  ```bash
+  npm view zero-md-formatter version
+  pnpm -g update zero-md-formatter
+  mdfmt --version
+  ```
+
+Never reuse a tag for a version that has already been published to npm.
 
 ### Behavior harness
 
