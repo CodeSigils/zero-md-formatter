@@ -101,8 +101,10 @@ Options:
 
 File exclusion:
   Create .mdfmtignore in the current directory (one pattern per line,
-  # for comments). Patterns ending with / match directories; *
-  matches non-/ characters, ** matches any characters including /.
+  # for comments). Patterns ending with / match directories (glob
+  characters allowed). * matches non-/ characters within one segment,
+  ** matches across segments. Root-only anchoring: patterns without /
+  match from the project root. ? and [...] are literals; no ! negation.
   node_modules/ and .git/ are always skipped.
   Used by --all and explicit paths.
 `);

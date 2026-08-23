@@ -65,7 +65,7 @@ node src/index.js --fix --guard README.md
 - Normalize leading-tab indentation outside fenced code blocks
 - Align [GFM] table columns when the table has no empty-cell ambiguity
 - Normalize tilde fences to backtick fences, escalating the backtick count when
-  nested content requires it
+  nested content requires it; existing backtick fences are never modified
 
 **Guard-owned behavior:**
 
@@ -109,11 +109,13 @@ mdfmt [options] <path...>
 
 ### File exclusion
 
-Create `.mdfmtignore` in the project root to exclude files from `--all` and explicit path processing. One pattern per line; `#` for comments. Patterns ending with `/` match directory prefixes.
+Create `.mdfmtignore` in the project root to exclude files from `--all` and explicit path processing. One pattern per line; `#` for comments. Patterns ending with `/` match directories; glob characters are honored there too (`build*/`, `**/tmp/`).
 
 - `*` matches any characters within a single path segment
 - `**` matches across any number of path segments (`docs/**/*.md`, `**/generated/`)
 - Everything else matches literally or as a path prefix
+- Patterns without a `/` are matched against the project root only (`*.md` does not match `docs/a.md`)
+- `?` and `[...]` have no special meaning and match literally; `!` negation is not supported
 
 ```
 # Skip vendored docs and generated output
