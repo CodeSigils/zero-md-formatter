@@ -43,3 +43,15 @@ it('exposes public package and skill discovery paths', () => {
     assert.ok(pkg.keywords.includes(keyword), `package.json should include the ${keyword} discovery keyword`);
   }
 });
+
+it('keeps CI and release safety guarantees documented and wired', () => {
+  const workflow = readFileSync('.github/workflows/ci.yml', 'utf8');
+  const release = readFileSync('scripts/release.sh', 'utf8');
+  assert.match(workflow, /npm test/);
+  assert.match(workflow, /actions\/upload-artifact@/);
+  assert.match(workflow, /actions\/download-artifact@/);
+  assert.match(workflow, /npm publish artifacts\/\*\.tgz/);
+  assert.match(release, /DRY_RUN=1/);
+  assert.match(release, /Uncommitted changes.*before running release\.sh/);
+  assert.doesNotMatch(release, /git commit -m "sync skill metadata/);
+});

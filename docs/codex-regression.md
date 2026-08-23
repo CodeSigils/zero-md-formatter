@@ -7,7 +7,7 @@ workflows:
 1. use `--fix --guard` to format a dirty GFM table; and
 2. preserve a file when an unescaped inline-code pipe triggers the safety gate.
 
-Normal CI runs only the fixture and grader self-tests:
+Normal CI runs the fixture and grader self-tests as part of `npm test`:
 
 ```bash
 npm run test:behavior

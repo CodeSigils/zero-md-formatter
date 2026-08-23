@@ -31,15 +31,17 @@ function normalizeLineEndings(content) {
  * @returns {string} Text with trailing whitespace removed.
  */
 function normalizeTrailingWhitespace(content) {
-  return content
-    .split("\n")
-    .map((line) =>
-      line.replace(/[ \t]+$/g, (match) => {
-        // Preserve 2+ trailing spaces (Markdown hard line break), strip everything else
-        return /^  +$/.test(match) ? match : "";
-      })
-    )
-    .join("\n");
+  const lines = content.split("\n");
+  let currentFence = null;
+  return lines.map((line) => {
+    const fenceBoundary = getFenceBoundary(line, currentFence);
+    if (fenceBoundary !== null) {
+      currentFence = fenceBoundary || null;
+      return line;
+    }
+    if (currentFence) return line;
+    return line.replace(/[ \t]+$/g, (match) => /^  +$/.test(match) ? match : "");
+  }).join("\n");
 }
 
 /**

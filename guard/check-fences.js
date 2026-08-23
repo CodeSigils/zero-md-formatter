@@ -22,6 +22,7 @@
 
 const fs = require("fs");
 const process = require("process");
+const { parseFenceLine, isFenceCloser } = require("./fence-utils.js");
 
 /**
  * Validate fenced code block structure in markdown content per GFM §4.7.
@@ -40,19 +41,15 @@ function validateFences(content) {
   for (let lineNum = 0; lineNum < lines.length; lineNum++) {
     const line = lines[lineNum];
     const lineNum1Based = lineNum + 1;
-    const fenceMatch = line.match(/^( {0,3})(`{3,}|~{3,})([^\n]*)$/);
+    const parsed = parseFenceLine(line);
+    if (!parsed) continue;
 
-    if (!fenceMatch) continue;
-
-    const [, indent, fenceChars, infoString] = fenceMatch;
+    const { indent, marker: fenceChars, info: infoString } = parsed;
     const fenceChar = fenceChars[0];
     const fenceLength = fenceChars.length;
 
     if (current) {
-      const closesCurrent =
-        fenceChar === current.fenceChar &&
-        fenceLength >= current.fenceLength &&
-        infoString.trim() === "";
+      const closesCurrent = isFenceCloser(line, current);
 
       if (closesCurrent) {
         current = null;

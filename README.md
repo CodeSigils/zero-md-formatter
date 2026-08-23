@@ -187,7 +187,7 @@ agentskills.io-formatted skills.
 
 The optional [Codex behavioral regression][codex-regression] checks that an
 agent both performs guarded formatting and respects a blocking pipe hazard.
-Normal CI runs only its deterministic self-tests.
+Normal CI runs the deterministic behavior self-tests as part of `npm test`.
 
 ### Install as a skill
 
@@ -318,7 +318,7 @@ user-wide installs.
 | ---------------------- | --------------------------------------- |
 | CLI (`src/index.js`)   | Pure Node.js, no agent runtime required |
 | SKILL.md               | agentskills.io base frontmatter         |
-| Guard scripts (4)      | Node.js, no agent tools referenced      |
+| Guard modules          | Node.js, no agent tools referenced      |
 | Post-write hook config | Hermes-specific (platform feature)      |
 
 ---
@@ -370,11 +370,13 @@ The shipped runtime payload contains:
 zero-md-formatter/
   SKILL.md
   src/index.js
+  src/repairs.js
   src/format-content.mjs
   guard/check-structure.js
   guard/check-fences.js
   guard/check-tables.js
   guard/check-pipes.js
+  guard/fence-utils.js
   scripts/check-markdown.sh
 ```
 
@@ -398,39 +400,67 @@ field in package.json — `scripts/` is not shipped with npm, except
 
 ## Maintaining
 
-- **Evidence URLs** — [`docs/evidence-urls.json`](docs/evidence-urls.json) lists
-  the external references cited by this README and skill. CI fails once any
-  `last_verified` stamp is older than 30 days. Refresh after re-checking the
-  links live:
+### Everyday changes
 
-  ```bash
-  node scripts/verify-urls.mjs --update   # verifies, then stamps today's date
-  ```
+After changing runtime code, guards, tests, or documentation:
 
-- **Consistency gates** — `npm test` runs structural checks (`check-all`),
-  unit + integration suites, `check-consistency`, and behavior self-tests.
-  The pre-commit hook runs the same gate; keep commits green.
+```bash
+npm test
+npm run format:check
+bash scripts/staged-install-verify.sh
+```
 
-- **Releases** — feature work must land *before* the version bump: `release.sh`
-  refuses to run unless HEAD touches only version/release files
-  (`package.json`, lockfile, `README.md`, both `SKILL.md` copies). Bump with
-  `npm version <patch|minor|major>` — its lifecycle hooks sync the SKILL.md
-  frontmatter and the skills payload automatically; never hand-edit those.
-  Then push main, wait for green CI, and run `bash scripts/release.sh` — the
-  tag push triggers the irreversible `npm publish --provenance`.
+`npm test` covers structural fixtures, unit tests, integration tests,
+consistency checks, and deterministic behavior tests. The pre-commit hook runs
+the same test suite plus the formatting check. Runtime files listed by
+[`scripts/runtime-payload.js`](scripts/runtime-payload.js) must be synchronized
+with `skills/markdown-formatter/`; run this after runtime edits:
 
-- **Skills mirror** — [`src/index.js`](src/index.js) and
-  [`src/format-content.mjs`](src/format-content.mjs) must stay byte-identical
-  to their copies under [`skills/markdown-formatter/src/`](skills/markdown-formatter/src/);
-  `check-consistency` fails on drift. After editing either file, refresh with:
+```bash
+node scripts/sync-tap-payload.js
+```
 
-  ```bash
-  node scripts/sync-tap-payload.js
-  ```
+### Evidence URLs
 
-- **Behavior harness** — `test:behavior` in CI only runs self-tests; the live
-  agent evaluation is manual and documented in
-  [`docs/codex-regression.md`](docs/codex-regression.md).
+[`docs/evidence-urls.json`](docs/evidence-urls.json) records the external
+references used by the README and skill. Unit tests enforce that every
+`last_verified` value is no more than 30 days old; CI also performs live HTTP
+verification.
+
+After checking the links live, refresh the timestamps with:
+
+```bash
+node scripts/verify-urls.mjs --update
+```
+
+Do not use `--update` without a successful live verification.
+
+### Release process
+
+Runtime changes must be merged before the isolated version-bump commit.
+`release.sh` requires a clean tree, synchronized skill metadata, a stable
+`x.y.z` version, an isolated version commit, a pushed `main`, and successful
+CI. It creates the tag and GitHub Release; the tag workflow publishes the exact
+npm tarball tested by CI.
+
+```bash
+npm version patch --no-git-tag-version   # or minor/major
+git add package.json package-lock.json SKILL.md skills/markdown-formatter
+git commit -m "chore(release): bump version to X.Y.Z"
+git push origin main
+DRY_RUN=1 bash scripts/release.sh
+bash scripts/release.sh
+```
+
+The dry run validates all release preconditions without creating a tag,
+pushing, or publishing. Do not run regular `npm version` here because it
+creates a tag before `release.sh` can perform its checks.
+
+### Behavior harness
+
+`npm run test:behavior` runs deterministic fixture and grader self-tests. The
+live Codex evaluation is optional and manual; its commands and artifact policy
+are documented in [`docs/codex-regression.md`](docs/codex-regression.md).
 
 ---
 

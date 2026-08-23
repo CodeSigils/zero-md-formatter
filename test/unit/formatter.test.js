@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const { mkdtempSync, writeFileSync, mkdirSync, rmSync } = require('node:fs');
 const { join } = require('node:path');
 const { tmpdir } = require('node:os');
+const { detectAdjacentPipes } = require('../../guard/check-pipes.js');
 const {
   NODE_RUNTIME_MIN_VERSION,
   parseArgs,
@@ -457,6 +458,11 @@ describe('repairTableColumns', () => {
 });
 
 describe('repairAdjacentPipes', () => {
+  it('repairs pipe runs longer than two without leaving hazards', () => {
+    const input = '| A ||| B |\n| --- | --- | --- |\n| 1 |||| 2 |';
+    const result = repairAdjacentPipes(input);
+    assert.equal(detectAdjacentPipes(result).length, 0);
+  });
   const { repairAdjacentPipes } = require('../../src/index.js');
 
   it('returns original content when no adjacent pipes are present', () => {

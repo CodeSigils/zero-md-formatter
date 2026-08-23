@@ -13,6 +13,7 @@ describe('runtime payload allowlist', () => {
       'guard/check-fences.js',
       'guard/check-tables.js',
       'guard/check-pipes.js',
+      'guard/fence-utils.js',
       'scripts/check-markdown.sh',
     ]);
   });

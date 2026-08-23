@@ -9,6 +9,7 @@
 const { existsSync } = require("fs");
 const { join } = require("path");
 const { ROOT, findAllFiles } = require("./common");
+const RUNTIME_PAYLOAD_FILES = require("../runtime-payload");
 
 const EXCLUDE_DIRS = new Set(["node_modules", ".git", ".omo", ".open-mem", "format-edge-cases"]);
 
@@ -41,6 +42,11 @@ const PLAN_EXPECTED_REPO_SHAPE = new Set([
   "guard/check-pipes.js",
   "test/",
 ]);
+
+for (const file of RUNTIME_PAYLOAD_FILES) {
+  PLAN_EXPECTED_REPO_SHAPE.add(file);
+  PLAN_EXPECTED_REPO_SHAPE.add(`skills/markdown-formatter/${file}`);
+}
 
 const HISTORICAL_LINT_ARTIFACTS = new Set([
   "AGENTS.md",

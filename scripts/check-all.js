@@ -11,7 +11,6 @@
  */
 'use strict';
 
-const { spawnSync } = require('child_process');
 const { join, resolve, extname, relative } = require('path');
 const { readdirSync, statSync, existsSync } = require('fs');
 
@@ -64,27 +63,19 @@ function collectFiles(targets) {
 }
 
 function runCheck(check, file) {
-  const scriptPath = join(SKILL_DIR, 'guard', `${check.name}.js`);
-  const result = spawnSync(process.execPath, [scriptPath, ...check.args, file], { encoding: 'utf8' });
-  if (result.error) {
-    return {
-      ok: false,
-      stdout: result.stdout || '',
-      stderr: `Failed to run ${check.name}.js: ${result.error.message}\n${result.stderr || ''}`,
+  try {
+    const content = require('fs').readFileSync(file, 'utf8');
+    const validators = {
+      'check-structure': require('../guard/check-structure.js').validateStructure,
+      'check-fences': require('../guard/check-fences.js').validateFences,
+      'check-tables': require('../guard/check-tables.js').validateTables,
+      'check-pipes': require('../guard/check-pipes.js').validatePipes,
     };
+    const errors = validators[check.name](content);
+    return { ok: check.name === 'check-pipes' || errors.length === 0, stdout: '', stderr: errors.join('\n') };
+  } catch (error) {
+    return { ok: false, stdout: '', stderr: `Failed to run ${check.name}.js: ${error.message}\n` };
   }
-  if (result.signal) {
-    return {
-      ok: false,
-      stdout: result.stdout || '',
-      stderr: `${check.name}.js exited from signal: ${result.signal}\n${result.stderr || ''}`,
-    };
-  }
-  return {
-    ok: result.status === 0,
-    stdout: result.stdout || '',
-    stderr: result.stderr || '',
-  };
 }
 
 function isViolationFixture(file) {

@@ -140,6 +140,7 @@ describe('check-structure.js unit tests', () => {
         isClosed: true
       });
       assert.deepStrictEqual(snapshot.tables[0], {
+        hasOuterPipes: true,
         headerCols: 2,
         delimiterCols: 2,
         rowCols: [2],
@@ -365,6 +366,25 @@ describe('check-structure.js unit tests', () => {
       
       const drift = compareSnapshots(before, after);
       assert.deepStrictEqual(drift, []);
+    });
+
+    it('detects closure, pipe-style, and row-alignment drift', () => {
+      const before = {
+        fenceCount: 1,
+        fences: [{ length: 3, style: '`', info: '', hasInfo: false, isClosed: true }],
+        tableCount: 1,
+        tables: [{ headerCols: 2, delimiterCols: 2, rowCols: [1], headerDelimiterMatch: true, rowsMatch: false, hasOuterPipes: true }],
+      };
+      const after = {
+        fenceCount: 1,
+        fences: [{ length: 3, style: '`', info: '', hasInfo: false, isClosed: false }],
+        tableCount: 1,
+        tables: [{ headerCols: 2, delimiterCols: 2, rowCols: [1], headerDelimiterMatch: true, rowsMatch: true, hasOuterPipes: false }],
+      };
+      const drift = compareSnapshots(before, after).join('\n');
+      assert.match(drift, /closed-state changed/);
+      assert.match(drift, /pipe style changed/);
+      assert.match(drift, /row alignment changed/);
     });
   });
 });

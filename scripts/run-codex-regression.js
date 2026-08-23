@@ -21,7 +21,7 @@ function run(command, args, options = {}) {
   return result;
 }
 
-function prepareFixture(root, testCase) {
+function prepareFixture(root, testCase, options = {}) {
   if (fs.existsSync(root)) throw new Error(`fixture already exists: ${root}`);
   fs.mkdirSync(path.join(root, ".agents/skills"), { recursive: true });
   fs.cpSync(
@@ -31,6 +31,7 @@ function prepareFixture(root, testCase) {
   );
   fs.mkdirSync(path.join(root, "docs"));
   fs.writeFileSync(path.join(root, "docs/guide.md"), testCase.input);
+  if (options.withGit === false) return;
   for (const args of [
     ["init", "-b", "main"],
     ["config", "user.name", "Codex Eval"],
@@ -64,7 +65,7 @@ function selfTest() {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), "zero-md-runner-"));
   for (const testCase of readJson(CASES).cases) {
     const fixture = path.join(base, testCase.id);
-    prepareFixture(fixture, testCase);
+    prepareFixture(fixture, testCase, { withGit: false });
     const args = codexArgs(fixture, testCase.prompt, path.join(base, "result.json"));
     if (!args.includes("--output-schema") || args.at(-1) !== testCase.prompt) {
       throw new Error("invalid Codex command");

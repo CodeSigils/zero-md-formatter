@@ -8,7 +8,6 @@
  *
  * Callers:
  *   - npm version lifecycle (runs automatically during npm version)
- *   - release.sh (catches manual bumps where SKILL.md was forgotten)
  *   - developer can run manually at any time
  */
 

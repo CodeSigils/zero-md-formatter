@@ -25,7 +25,8 @@
 "use strict";
 
 const { readFileSync, writeFileSync, existsSync } = require("fs");
-const { splitTableCells, splitTableCellsForStyle, isPotentialTableRow, isTableBodyRowForStyle, isDelimiterLine, getFenceBoundary } = require("./check-tables.js");
+const { splitTableCells, splitTableCellsForStyle, isPotentialTableRow, isTableBodyRowForStyle, isDelimiterLine, hasMinimumDelimiterDashes, getFenceBoundary } = require("./check-tables.js");
+const { parseFenceLine, isFenceCloser } = require("./fence-utils.js");
 
 const VALID_MODES = ["--snapshot", "--check", "--guard", "--verify"];
 
@@ -47,22 +48,21 @@ function extractFences(content) {
   for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
     const line = lines[lineIdx];
     if (!current) {
-      const opener = line.match(/^( {0,3})(`{3,}|~{3,})([^\n]*)$/);
+      const opener = parseFenceLine(line);
       if (opener) {
         current = {
-          indent: opener[1],
-          opener: opener[2],
-          length: opener[2].length,
-          style: opener[2][0],
-          info: opener[3] || "",
+          indent: opener.indent,
+          opener: opener.marker,
+          length: opener.length,
+          style: opener.style,
+          info: opener.info || "",
           openLine: lineIdx,
         };
       }
       continue;
     }
 
-    const closerPattern = new RegExp(`^ {0,3}${current.style}{${current.length},}\\s*$`);
-    if (closerPattern.test(line)) {
+    if (isFenceCloser(line, current)) {
       fences.push({
         opener: current.opener,
         length: current.length,
@@ -141,7 +141,7 @@ function extractTables(content) {
       j++;
     }
 
-    tables.push({ header, delimiter, rows });
+    tables.push({ header, delimiter, rows, hasOuterPipes });
     i = j - 1;
   }
 
@@ -168,6 +168,7 @@ function buildSnapshot(content) {
     tables: tables.map((t) => ({
       headerCols: t.header.colCount,
       delimiterCols: t.delimiter.colCount,
+      hasOuterPipes: t.hasOuterPipes,
       rowCols: t.rows.map((r) => r.colCount),
       headerDelimiterMatch: t.header.colCount === t.delimiter.colCount,
       rowsMatch: t.rows.every((r) => r.colCount === t.header.colCount),
@@ -231,6 +232,7 @@ function validateStructure(content) {
   }
   for (const table of tables) {
     if (table.header.colCount !== table.delimiter.colCount) errors.push(`Table column mismatch: header ${table.header.colCount} vs delimiter ${table.delimiter.colCount}`);
+    if (!hasMinimumDelimiterDashes(table.delimiter.cells.map((cell) => cell).join(" | "))) errors.push("Table delimiter cells must contain at least 3 dashes");
     for (let i = 0; i < table.rows.length; i++) {
       if (table.rows[i].colCount !== table.header.colCount) errors.push(`Table row ${i + 1} column mismatch: row ${table.rows[i].colCount} vs header ${table.header.colCount}`);
     }
@@ -293,13 +295,16 @@ function compareSnapshots(before, after) {
     if (b.style !== a.style) drift.push(`Fence[${i}] style changed: ${b.style} -> ${a.style}`);
     if (b.info !== a.info) drift.push(`Fence[${i}] info string changed: "${b.info}" -> "${a.info}"`);
     if (b.hasInfo !== a.hasInfo) drift.push(`Fence[${i}] has-info changed: ${b.hasInfo} -> ${a.hasInfo}`);
+    if (b.isClosed !== a.isClosed) drift.push(`Fence[${i}] closed-state changed: ${b.isClosed} -> ${a.isClosed}`);
   }
   for (let i = 0; i < Math.max(before.tables.length, after.tables.length); i++) {
     const bt = before.tables[i], at = after.tables[i];
     if (!bt || !at) continue;
     if (bt.headerCols !== at.headerCols) drift.push(`Table[${i}] header cols changed: ${bt.headerCols} -> ${at.headerCols}`);
     if (bt.delimiterCols !== at.delimiterCols) drift.push(`Table[${i}] delimiter cols changed: ${bt.delimiterCols} -> ${at.delimiterCols}`);
+    if (bt.hasOuterPipes !== at.hasOuterPipes) drift.push(`Table[${i}] pipe style changed: ${bt.hasOuterPipes} -> ${at.hasOuterPipes}`);
     if (bt.headerDelimiterMatch !== at.headerDelimiterMatch) drift.push(`Table[${i}] header/delimiter alignment changed`);
+    if (bt.rowsMatch !== at.rowsMatch) drift.push(`Table[${i}] row alignment changed`);
     if (JSON.stringify(bt.rowCols) !== JSON.stringify(at.rowCols)) drift.push(`Table[${i}] row col counts changed: ${JSON.stringify(bt.rowCols)} -> ${JSON.stringify(at.rowCols)}`);
   }
   return drift;

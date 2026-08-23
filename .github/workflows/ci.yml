@@ -4,11 +4,6 @@ on:
   push:
     branches: [main]
     tags: ['v*']
-    paths-ignore:
-      - '.gitignore'
-      - '.githooks/**'
-      - '.mdfmtignore'
-      - 'SECURITY.md'
   pull_request:
     branches: [main]
 
@@ -36,15 +31,20 @@ jobs:
           cache: 'npm'
           cache-dependency-path: package-lock.json
       - run: npm ci
-      - run: npm run test:structural
-      - run: node --test test/unit/*.test.js
-      - run: node test/integration/cli.test.js
+      - run: npm test
       - run: npm run format:check
+      - run: mkdir -p artifacts && npm pack --pack-destination artifacts
       - run: bash -n scripts/check-markdown.sh
       - run: bash scripts/staged-install-verify.sh
       - run: git diff --exit-code -- skills/markdown-formatter
       - run: npm audit --audit-level=high
       - run: npm run verify:urls
+      - name: Upload tested npm package
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: npm-package
+          path: artifacts/*.tgz
+          if-no-files-found: error
 
   publish:
     needs: test
@@ -67,6 +67,13 @@ jobs:
           cache: 'npm'
           cache-dependency-path: package-lock.json
       - run: npm ci
-      - run: npm publish --provenance
+      - name: Verify package version matches release tag
+        run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
+      - name: Download tested npm package
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: npm-package
+          path: artifacts
+      - run: npm publish artifacts/*.tgz --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

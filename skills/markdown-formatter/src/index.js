@@ -23,7 +23,7 @@
 
 "use strict";
 
-const { readdirSync, statSync, existsSync, readFileSync, writeFileSync, copyFileSync, mkdtempSync, rmSync } = require("fs");
+const { readdirSync, statSync, existsSync, readFileSync, writeFileSync, renameSync, unlinkSync, chmodSync, copyFileSync, mkdtempSync, rmSync } = require("fs");
 const { join, resolve, relative, extname, basename } = require("path");
 const { tmpdir } = require("os");
 
@@ -152,6 +152,7 @@ function runDoctor(options = {}) {
     join(SKILL_DIR, "guard", "check-fences.js"),
     join(SKILL_DIR, "guard", "check-tables.js"),
     join(SKILL_DIR, "guard", "check-pipes.js"),
+    join(SKILL_DIR, "guard", "fence-utils.js"),
   ];
 
   let ok = true;
@@ -361,7 +362,7 @@ const segmentRegexCache = new Map();
 function globMatch(relPath, pattern) {
   const pathSegs = relPath.split("/");
   const globSegs = pattern.split("/");
-  return _globMatchRecursive(pathSegs, globSegs, 0, 0);
+  return _globMatchRecursive(pathSegs, globSegs, 0, 0, new Map());
 }
 
 /**
@@ -374,7 +375,9 @@ function globMatch(relPath, pattern) {
  * @param {number} pj - Current path index.
  * @returns {boolean} Match result.
  */
-function _globMatchRecursive(ps, gs, pi, pj) {
+function _globMatchRecursive(ps, gs, pi, pj, memo) {
+  const key = `${pi}:${pj}`;
+  if (memo.has(key)) return memo.get(key);
   // Both exhausted → match
   if (pi === gs.length && pj === ps.length) return true;
 
@@ -388,8 +391,9 @@ function _globMatchRecursive(ps, gs, pi, pj) {
     if (pi + 1 === gs.length) return true;
     // Try matching rest of glob against current + each subsequent path position
     for (let k = pj; k <= ps.length; k++) {
-      if (_globMatchRecursive(ps, gs, pi + 1, k)) return true;
+      if (_globMatchRecursive(ps, gs, pi + 1, k, memo)) { memo.set(key, true); return true; }
     }
+    memo.set(key, false);
     return false;
   }
 
@@ -398,9 +402,12 @@ function _globMatchRecursive(ps, gs, pi, pj) {
 
   // Current glob is * or literal — match single segment
   if (matchSegment(ps[pj], gs[pi])) {
-    return _globMatchRecursive(ps, gs, pi + 1, pj + 1);
+    const result = _globMatchRecursive(ps, gs, pi + 1, pj + 1, memo);
+    memo.set(key, result);
+    return result;
   }
 
+  memo.set(key, false);
   return false;
 }
 
@@ -414,22 +421,22 @@ function _globMatchRecursive(ps, gs, pi, pj) {
 function matchesIgnorePattern(relPath, patterns) {
   // Normalize Windows separators so segment matching works cross-platform
   const posixPath = relPath.replace(/\\/g, "/");
-  for (const p of patterns) {
+  return patterns.some((p) => {
     // Trailing slash marks a directory pattern: it matches the directory
     // itself plus everything beneath it. Glob characters are honored.
     const isDirPattern = p.endsWith("/");
     const pat = isDirPattern ? p.slice(0, -1) : p;
-    if (!pat) continue;
+    if (!pat) return false;
     if (pat.includes("*")) {
       if (globMatch(posixPath, pat)) return true;
       // Directory globs must also cover every file below the matched dir
       if (isDirPattern && globMatch(posixPath, `${pat}/**`)) return true;
-      continue;
+      return false;
     }
     // Exact match or path prefix
     if (posixPath === pat || posixPath.startsWith(pat + "/")) return true;
-  }
-  return false;
+    return false;
+  });
 }
 
 
@@ -442,10 +449,7 @@ function matchesIgnorePattern(relPath, patterns) {
  * @returns {boolean} True if the operation writes to files.
  */
 function isWriteMode(args) {
-  for (const flag of READ_ONLY_FLAGS) {
-    if (args[flag]) return false;
-  }
-  return true; // no read-only flag → write mode (default)
+  return ![...READ_ONLY_FLAGS].some((flag) => args[flag]);
 }
 
 /**
@@ -523,6 +527,18 @@ function formatFileContent(content) {
   return formatContent(content, { indentWidth: 2 });
 }
 
+function atomicWriteFile(filePath, content) {
+  const tempPath = `${filePath}.tmp-${process.pid}-${Date.now()}`;
+  try {
+    writeFileSync(tempPath, content, "utf8");
+    chmodSync(tempPath, statSync(filePath).mode);
+    renameSync(tempPath, filePath);
+  } catch (error) {
+    try { unlinkSync(tempPath); } catch { /* preserve the original error */ }
+    throw error;
+  }
+}
+
 /**
  * Check formatting of a file (read-only).
  *
@@ -550,7 +566,7 @@ function checkFormatting(filePath, options = {}) {
 function writeFormatting(filePath) {
   const content = readFileSync(filePath, "utf8");
   const formatted = formatFileContent(content);
-  if (formatted !== content) writeFileSync(filePath, formatted);
+  if (formatted !== content) atomicWriteFile(filePath, formatted);
   return true;
 }
 
@@ -578,6 +594,18 @@ function checkIdempotenceReadOnly(filePath) {
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+}
+
+/** Preserve empty-cell tables while applying safe spacing normalization. */
+function preserveEmptyCellTables(filePath, content) {
+  const spaced = normalizeTableSpacing(content);
+  if (spaced !== content) {
+    atomicWriteFile(filePath, spaced);
+    console.error(`Note: ${basename(filePath)} — normalized table spacing; formatter skipped (empty cells).`);
+  } else {
+    console.error(`Note: ${basename(filePath)} — skipped formatter due to empty table cells; pipe repairs applied.`);
+  }
+  return true;
 }
 
 /**
@@ -664,7 +692,7 @@ function processFile(filePath, args) {
       }
       const repaired = repairAdjacentPipes(originalContent);
       if (repaired !== originalContent) {
-        writeFileSync(filePath, repaired);
+        atomicWriteFile(filePath, repaired);
         repairedContent = repaired;
         console.error(`Repaired adjacent pipes in ${basename(filePath)}`);
       }
@@ -688,7 +716,7 @@ function processFile(filePath, args) {
       return false;
     }
     if (repaired !== current) {
-      writeFileSync(filePath, repaired);
+      atomicWriteFile(filePath, repaired);
       repairedContent = repaired;
     }
   }
@@ -731,16 +759,7 @@ function processFile(filePath, args) {
     }
     // Preserve empty-cell tables; the formatter does not guess column intent.
     if (hasTableWithEmptyCells(repairedContent)) {
-      const preNormalize = repairedContent;
-      const spaced = normalizeTableSpacing(preNormalize);
-      if (spaced !== preNormalize) {
-        writeFileSync(filePath, spaced);
-        repairedContent = spaced;
-        console.error(`Note: ${basename(filePath)} — normalized table spacing; formatter skipped (empty cells).`);
-      } else {
-        console.error(`Note: ${basename(filePath)} — skipped formatter due to empty table cells; pipe repairs applied.`);
-      }
-      return true;
+      return preserveEmptyCellTables(filePath, repairedContent);
     }
     const snapshotPath = `${filePath}.structure.json`;
     const hadSnapshot = existsSync(snapshotPath);
@@ -748,14 +767,17 @@ function processFile(filePath, args) {
     try {
       if (!runScript("check-structure.js", "--snapshot", filePath)) return false;
       if (!writeFormatting(filePath)) {
-        writeFileSync(filePath, repairedContent);
+        atomicWriteFile(filePath, repairedContent);
         return false;
       }
       if (!runScript("check-structure.js", "--check", filePath)) {
-        writeFileSync(filePath, repairedContent);
+        atomicWriteFile(filePath, repairedContent);
         return false;
       }
       return true;
+    } catch (error) {
+      try { atomicWriteFile(filePath, repairedContent); } catch { /* preserve the original failure */ }
+      throw error;
     } finally {
       if (hadSnapshot) writeFileSync(snapshotPath, previousSnapshot);
       else rmSync(snapshotPath, { force: true });
@@ -771,15 +793,7 @@ function processFile(filePath, args) {
 
   // Preserve empty-cell tables rather than guessing author intent.
   if (writeMode && hasTableWithEmptyCells(repairedContent)) {
-    const preNormalize = repairedContent;
-    const spaced = normalizeTableSpacing(preNormalize);
-    if (spaced !== preNormalize) {
-      writeFileSync(filePath, spaced);
-      console.error(`Note: ${basename(filePath)} — normalized table spacing; formatter skipped (empty cells).`);
-    } else {
-      console.error(`Note: ${basename(filePath)} — skipped formatter due to empty table cells; pipe repairs applied.`);
-    }
-    return true;
+    return preserveEmptyCellTables(filePath, repairedContent);
   }
 
   return writeFormatting(filePath) && checkIdempotenceReadOnly(filePath);

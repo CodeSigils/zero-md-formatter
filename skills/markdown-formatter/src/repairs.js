@@ -1,6 +1,6 @@
 "use strict";
 
-const { splitTableCells, splitTableCellsForStyle, isPotentialTableRow, isTableBodyRowForStyle, isDelimiterLine, getFenceBoundary, tableRowHasInlineCodePipe } = require('../guard/check-tables.js');
+const { splitTableCells, splitTableCellsForStyle, isPotentialTableRow, isTableBodyRowForStyle, isDelimiterLine, getFenceBoundary, tableRowHasInlineCodePipe, findClosingBacktick } = require('../guard/check-tables.js');
 const { detectAdjacentPipes } = require('../guard/check-pipes.js');
 
 /**
@@ -145,13 +145,23 @@ function repairAdjacentPipes(content) {
           ticks++;
           pos++;
         }
-        codeSpanTicks = codeSpanTicks === ticks ? 0 : (codeSpanTicks || ticks);
+        if (codeSpanTicks === ticks) codeSpanTicks = 0;
+        else if (codeSpanTicks === 0 && findClosingBacktick(lines[i], pos + 1, lines[i].length, ticks) !== -1) codeSpanTicks = ticks;
         result += "`".repeat(ticks);
         continue;
       }
+      if (ch === "|" && codeSpanTicks === 0) {
+        let runLength = 1;
+        while (pos + runLength < lines[i].length && lines[i][pos + runLength] === "|") runLength++;
+        if (runLength > 1) {
+          result += Array.from({ length: runLength }, () => "|").join(" ");
+          pos += runLength - 1;
+          continue;
+        }
+      }
       if (ch === "|" && pos + 1 < lines[i].length && lines[i][pos + 1] === "|" && codeSpanTicks === 0) {
         result += "| |";
-        pos++; // skip the second pipe
+        pos++;
         continue;
       }
       result += ch;

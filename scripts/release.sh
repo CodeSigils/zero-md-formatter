@@ -17,6 +17,7 @@
 #
 # Usage:
 #   bash scripts/release.sh
+#   DRY_RUN=1 bash scripts/release.sh
 #
 # Prerequisites:
 #   - Working tree clean
@@ -37,18 +38,26 @@ info()  { printf '  %s\n' "$*"; }
 # Read version
 # ---------------------------------------------------------------------------
 VERSION="$(node -p "require('./package.json').version")"
+if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  die "Unsupported release version '${VERSION}'. release.sh currently accepts stable semver only (x.y.z)."
+fi
 TAG="v${VERSION}"
 PREVIOUS_TAG="$(git tag -l 'v*' --sort=-version:refname | head -1 || true)"
 
 echo "Preparing release ${TAG} ..."
 echo ""
 
+# Never synchronize, stage, or commit while unrelated work is present.
+info "Checking working tree before release preparation ..."
+if [[ -n "$(git status --porcelain)" ]]; then
+  die "Uncommitted changes. Commit or stash them before running release.sh."
+fi
+echo "  ✓ Clean"
+
 # ---------------------------------------------------------------------------
-# Precondition 0: sync SKILL.md frontmatter version from package.json
+# Precondition 0: verify synchronized skill metadata
 # ---------------------------------------------------------------------------
-info "Syncing skill metadata to ${VERSION} ..."
-node scripts/sync-version.js
-node scripts/sync-tap-payload.js
+info "Checking synchronized skill metadata ..."
 SKILL_MD_VERSION="$(sed -n 's/^version: *//p' SKILL.md)"
 if [[ -z "${SKILL_MD_VERSION}" ]]; then
   die "SKILL.md is missing a 'version:' field in its frontmatter."
@@ -58,32 +67,18 @@ if [[ "${TAP_SKILL_MD_VERSION}" != "${SKILL_MD_VERSION}" ]]; then
   die "skills/markdown-formatter/SKILL.md version (${TAP_SKILL_MD_VERSION:-missing}) does not match SKILL.md (${SKILL_MD_VERSION})."
 fi
 
-# If skill metadata was modified by the sync, commit it now so the
-# working tree is clean for the preconditions that follow.
-# This handles the manual-bump case (edit package.json directly
-# but forget skill metadata). When using 'npm version' the version
-# lifecycle script already handles this before release.sh runs.
-if ! git diff --quiet -- SKILL.md skills/markdown-formatter; then
-  git add SKILL.md skills/markdown-formatter
-  git commit -m "sync skill metadata to ${VERSION}" --no-verify
-  echo "  ✓ Skill metadata synced and committed (version ${SKILL_MD_VERSION})"
-else
-  echo "  ✓ Skill metadata matches (${SKILL_MD_VERSION})"
+if [[ "${SKILL_MD_VERSION}" != "${VERSION}" ]]; then
+  die "SKILL.md version (${SKILL_MD_VERSION}) does not match package.json (${VERSION}). Run 'npm version <patch|minor|major> --no-git-tag-version', commit the result, and rerun release.sh."
 fi
+if [[ -n "$(git diff -- SKILL.md skills/markdown-formatter)" ]]; then
+  die "Skill metadata has uncommitted changes. Commit synchronized payload files before release."
+fi
+echo "  ✓ Skill metadata matches (${SKILL_MD_VERSION})"
 
 echo ""
 
 # ---------------------------------------------------------------------------
-# Precondition 1: clean working tree
-# ---------------------------------------------------------------------------
-info "Checking working tree ..."
-if [[ -n "$(git status --porcelain)" ]]; then
-  die "Uncommitted changes. Commit or stash them first."
-fi
-echo "  ✓ Clean"
-
-# ---------------------------------------------------------------------------
-# Precondition 2: tag doesn't already exist locally or remotely
+# Precondition 1: tag doesn't already exist locally or remotely
 # ---------------------------------------------------------------------------
 info "Checking tag ${TAG} ..."
 if git rev-parse "${TAG}" >/dev/null 2>&1; then
@@ -212,6 +207,11 @@ fi
 echo ""
 echo "All preconditions passed. Proceeding with release ..."
 echo ""
+
+if [[ -n "${DRY_RUN:-}" ]]; then
+  echo "DRY_RUN is set; no tag, push, or GitHub Release will be created."
+  exit 0
+fi
 
 # ---------------------------------------------------------------------------
 # Create annotated tag

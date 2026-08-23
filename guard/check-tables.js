@@ -24,6 +24,7 @@
 
 const fs = require("fs");
 const process = require("process");
+const { parseFenceLine, isFenceCloser } = require("./fence-utils.js");
 
 /**
  * Split a GFM table row into cells, returning cell content strings.
@@ -50,7 +51,7 @@ function splitTableCellsForStyle(line, hasOuterPipes = true) {
   let end = trimmed.length;
 
   if (hasOuterPipes && trimmed[start] === "|") start++;
-  if (hasOuterPipes && end > start && trimmed[end - 1] === "|" && trimmed[end - 2] !== "\\") end--;
+  if (hasOuterPipes && end > start && trimmed[end - 1] === "|" && !isEscaped(trimmed, end - 1)) end--;
 
   for (let i = start; i < end; i++) {
     const ch = trimmed[i];
@@ -74,7 +75,11 @@ function splitTableCellsForStyle(line, hasOuterPipes = true) {
         i++;
       }
       cell += "`".repeat(ticks);
-      codeSpanTicks = codeSpanTicks === ticks ? 0 : (codeSpanTicks || ticks);
+      if (codeSpanTicks === ticks) {
+        codeSpanTicks = 0;
+      } else if (codeSpanTicks === 0 && findClosingBacktick(trimmed, i + 1, end, ticks) !== -1) {
+        codeSpanTicks = ticks;
+      }
       continue;
     }
 
@@ -89,6 +94,23 @@ function splitTableCellsForStyle(line, hasOuterPipes = true) {
 
   cells.push(cell.trim());
   return cells;
+}
+
+function findClosingBacktick(line, start, end, ticks) {
+  for (let i = start; i < end; i++) {
+    if (line[i] !== "`" || (i > 0 && isEscaped(line, i))) continue;
+    let run = 1;
+    while (i + run < end && line[i + run] === "`") run++;
+    if (run === ticks) return i;
+    i += run - 1;
+  }
+  return -1;
+}
+
+function isEscaped(value, index) {
+  let slashes = 0;
+  for (let i = index - 1; i >= 0 && value[i] === "\\"; i--) slashes++;
+  return slashes % 2 === 1;
 }
 
 /**
@@ -247,6 +269,11 @@ function isDelimiterLine(line) {
   return nonEmptyCells.every((cell) => /^:?-{1,}:?$/.test(cell.trim()));
 }
 
+function hasMinimumDelimiterDashes(line) {
+  const cells = splitTableCells(line).filter((cell) => cell.trim() !== "");
+  return cells.length > 0 && cells.every((cell) => /^:?-{3,}:?$/.test(cell.trim()));
+}
+
 /**
  * Fence state machine transition for the shared getFenceBoundary tracker.
  *
@@ -265,13 +292,10 @@ function isDelimiterLine(line) {
  */
 function getFenceBoundary(line, currentFence = null) {
   if (!currentFence) {
-    const opener = line.match(/^( {0,3})(`{3,}|~{3,})([^\n]*)$/);
-    if (!opener) return null;
-    return { style: opener[2][0], length: opener[2].length };
+    const opener = parseFenceLine(line);
+    return opener ? { style: opener.style, length: opener.length } : null;
   }
-
-  const closerPattern = new RegExp(`^ {0,3}${currentFence.style}{${currentFence.length},}\\s*$`);
-  return closerPattern.test(line) ? false : currentFence;
+  return isFenceCloser(line, currentFence) ? false : currentFence;
 }
 
 /**
@@ -338,6 +362,9 @@ function validateTables(content) {
 
     if (delimiterCols !== headerCols) {
       errors.push(`Line ${i + 2}: delimiter has ${delimiterCols} cols but header has ${headerCols}`);
+    }
+    if (!hasMinimumDelimiterDashes(delimiter)) {
+      errors.push(`Line ${i + 2}: delimiter cells must contain at least 3 dashes`);
     }
 
     let rowIndex = 1;
@@ -410,6 +437,9 @@ module.exports = {
   getFenceBoundary,
   hasUnclosedFence,
   tableRowHasInlineCodePipe,
+  isEscaped,
+  findClosingBacktick,
+  hasMinimumDelimiterDashes,
   validateTables,
   validateFile,
   main,

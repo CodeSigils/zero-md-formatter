@@ -19,7 +19,7 @@
 
 const fs = require("fs");
 const process = require("process");
-const { getFenceBoundary, isDelimiterLine, isPotentialTableRow, splitTableCells } = require("./check-tables.js");
+const { getFenceBoundary, isDelimiterLine, isPotentialTableRow, splitTableCells, findClosingBacktick } = require("./check-tables.js");
 
 /**
  * Check if a line sits in a GFM table context by checking surrounding lines
@@ -94,7 +94,8 @@ function detectAdjacentPipes(content) {
           ticks++;
           pos++;
         }
-        codeSpanTicks = codeSpanTicks === ticks ? 0 : (codeSpanTicks || ticks);
+        if (codeSpanTicks === ticks) codeSpanTicks = 0;
+        else if (codeSpanTicks === 0 && findClosingBacktick(line, pos + 1, line.length, ticks) !== -1) codeSpanTicks = ticks;
         continue;
       }
 

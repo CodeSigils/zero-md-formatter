@@ -20,9 +20,24 @@ describe('check-tables.js unit tests', () => {
     assert.deepStrictEqual(splitTableCellsForStyle('value | ', false), ['value', '']);
   });
 
+  it('uses backslash parity for a trailing outer pipe', () => {
+    assert.deepEqual(splitTableCellsForStyle('| value \\\\|', true), ['value \\\\']);
+    assert.deepEqual(splitTableCellsForStyle('| value \\\|', true), ['value \\\|']);
+  });
+
   it('detects delimiter lines', () => {
     assert.equal(isDelimiterLine('| :--- | ---: | :---: |'), true);
     assert.equal(isDelimiterLine('| name | value |'), false);
+  });
+
+  it('rejects delimiter cells shorter than the GFM minimum', () => {
+    const errors = validateTables('| Name | Value |\n| - | -- |\n| A | B |');
+    assert.ok(errors.some((error) => /at least 3 dashes/.test(error)));
+  });
+
+  it('treats pipes after an unmatched backtick run as table delimiters', () => {
+    const errors = validateTables('| A | B |\n| --- | --- |\n| 1 | `x | y |');
+    assert.ok(errors.some((error) => /row 1 has 3 cols but header has 2/.test(error)));
   });
 
   it('accepts valid tables with escaped pipe content', () => {
@@ -79,11 +94,10 @@ describe('check-tables.js unit tests', () => {
     }
   });
 
-  it('detects literal fence markers inside table cells as column drift risk', () => {
+  it('treats unmatched backticks as literal table content', () => {
     const errors = validateTables('| Example | Notes |\n| --- | --- |\n| ```bash | do not put fence markers in table cells |\n');
 
-    assert.equal(errors.length, 1);
-    assert.match(errors[0], /row 1 has 1 cols but header has 2/);
+    assert.deepEqual(errors, []);
   });
 
   it('detects inline-code pipes in table rows before formatter can split them', () => {

@@ -30,6 +30,14 @@ describe('format-content micro-formatter', () => {
     assert.match(output, /^\tverbatim/m);
   });
 
+  it('preserves fenced code content while normalizing surrounding markdown', () => {
+    const input = 'before\t\n```text\ncode  \n\tcode\n```\nafter\t';
+    const output = formatContent(input);
+    assert.match(output, /```text\ncode  \n\tcode\n```/);
+    assert.match(output, /^before\n/m);
+    assert.match(output, /after\n$/);
+  });
+
   it('aligns pipe tables and preserves delimiter alignment markers', () => {
     const input = [
       '| A | Long | Right | Both |',

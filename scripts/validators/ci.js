@@ -32,11 +32,12 @@ function validateCi(files) {
 
   // Required patterns that must appear
   const required = [
-    { pattern: /npm\s+run\s+test:structural/i, label: "runs test:structural for guard checks" },
-    { pattern: /test\/unit\/.*\.test\.js/i, label: "runs unit tests" },
-    { pattern: /test\/integration\/.*\.test\.js/i, label: "runs integration tests" },
+    { pattern: /npm\s+test\b/i, label: "runs the canonical npm test suite" },
     { pattern: /npm\s+run\s+format:check/i, label: "checks maintainer docs formatting" },
     { pattern: /staged-install-verify\.sh/i, label: "verifies staged runtime payload" },
+    { pattern: /actions\/upload-artifact@/i, label: "uploads the tested npm package" },
+    { pattern: /actions\/download-artifact@/i, label: "publishes the tested npm package artifact" },
+    { pattern: /npm\s+publish\s+artifacts\/\*\.tgz/i, label: "publishes the tested npm tarball" },
     { pattern: /npm\s+ci/i, label: "installs repository dependencies" },
     { pattern: /CHECK_BASE_REF/i, label: "sets CHECK_BASE_REF for release-drift checks" },
     { pattern: /fetch-depth:\s*0/i, label: "uses full git depth for diff history in precheck" },
