@@ -47,11 +47,17 @@ it('exposes public package and skill discovery paths', () => {
 it('keeps CI and release safety guarantees documented and wired', () => {
   const workflow = readFileSync('.github/workflows/ci.yml', 'utf8');
   const release = readFileSync('scripts/release.sh', 'utf8');
+  const releaseNotes = readFileSync('.github/release.yml', 'utf8');
   assert.match(workflow, /npm test/);
   assert.match(workflow, /actions\/upload-artifact@/);
   assert.match(workflow, /actions\/download-artifact@/);
   assert.match(workflow, /npm publish \.\/artifacts\/\*\.tgz/);
+  assert.match(workflow, /matrix:/);
+  assert.match(workflow, /upload-artifact@b7c566a/);
+  assert.match(workflow, /download-artifact@37930b1/);
   assert.match(release, /DRY_RUN=1/);
+  assert.match(release, /--generate-notes/);
+  assert.match(releaseNotes, /categories:/);
   assert.match(release, /Uncommitted changes.*before running release\.sh/);
   assert.doesNotMatch(release, /git commit -m "sync skill metadata/);
 });

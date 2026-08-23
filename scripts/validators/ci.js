@@ -56,8 +56,8 @@ function validateCi(files) {
   if (!ciNodeVersion) {
     errors.push(".node-version is missing or unreadable");
   }
-  if (!/node-version-file:\s*\.node-version/.test(ci)) {
-    warnings.push("ci.yml: setup-node should use node-version-file: .node-version for CI validation");
+  if (!/node-version-file:\s*\.node-version/.test(ci) && !/matrix:\s*[\s\S]*node-version:/i.test(ci)) {
+    warnings.push("ci.yml: setup-node should use .node-version or an explicit compatibility matrix");
   }
 
   return { errors, warnings };

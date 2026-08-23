@@ -12,6 +12,7 @@ if (manifest.version !== 3 || !Array.isArray(manifest.urls)) {
 }
 
 const failures = [];
+let networkFailures = 0;
 for (const entry of manifest.urls) {
   if (!entry.name || !entry.url || !Array.isArray(entry.expected_statuses)) {
     failures.push(`${entry.name ?? "<unnamed>"}: invalid manifest entry`);
@@ -23,12 +24,18 @@ for (const entry of manifest.urls) {
       failures.push(`${entry.name}: HTTP ${response.status}`);
     }
   } catch (error) {
-    failures.push(`${entry.name}: ${error.message}`);
+    networkFailures += 1;
+    const code = error?.cause?.code;
+    const detail = code ? `${error.message} (${code})` : error.message;
+    failures.push(`${entry.name}: ${detail} — check network/DNS/proxy access and retry`);
   }
 }
 
 if (failures.length > 0) {
   console.error(failures.join("\n"));
+  if (networkFailures === failures.length) {
+    console.error("verify-urls: all checks failed before receiving HTTP responses; network access appears unavailable.");
+  }
   process.exitCode = 1;
 } else {
   if (update) {

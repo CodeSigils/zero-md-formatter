@@ -57,6 +57,7 @@
     "test:integration": "node test/integration/cli.test.js",
     "test:consistency": "node scripts/check-consistency.js",
     "verify:urls": "node scripts/verify-urls.mjs",
+    "check:links": "node scripts/check-links.mjs",
     "format": "node scripts/format-files.js --fix",
     "format:check": "node scripts/format-files.js --check",
     "verify": "node scripts/format-files.js --verify",

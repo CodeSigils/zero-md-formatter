@@ -13,7 +13,7 @@
 # What it does:
 #   1. Creates an annotated git tag v<VERSION> from package.json version
 #   2. Pushes HEAD and the annotated tag to origin/main
-#   3. Creates a GitHub Release with commit subjects since the previous tag
+#   3. Creates a GitHub Release with GitHub-generated release notes
 #
 # Usage:
 #   bash scripts/release.sh
@@ -231,25 +231,12 @@ echo "Pushing tag ${TAG} ..."
 git push origin "${TAG}"
 
 # ---------------------------------------------------------------------------
-# Build release body from git history
+# Configure GitHub-generated release notes. Categories and exclusions are
+# maintained in .github/release.yml rather than a checked-in changelog.
 # ---------------------------------------------------------------------------
-BODY_FILE="$(mktemp)"
-trap 'rm -f "${BODY_FILE}"' EXIT
-
-{
-  echo "Changes in ${TAG}:"
-  echo ""
-  if [[ -n "${PREVIOUS_TAG}" ]]; then
-    git log --no-merges --pretty='- %s' "${PREVIOUS_TAG}..HEAD"
-  else
-    git log --no-merges --pretty='- %s' HEAD
-  fi
-} > "${BODY_FILE}"
-
-# Check we got something
-if [[ ! -s "${BODY_FILE}" ]]; then
-  echo "ERROR: Failed to build release body from git history for ${TAG}." >&2
-  exit 1
+RELEASE_NOTES_ARGS=(--generate-notes)
+if [[ -n "${PREVIOUS_TAG}" ]]; then
+  RELEASE_NOTES_ARGS+=(--notes-start-tag "${PREVIOUS_TAG}")
 fi
 
 # ---------------------------------------------------------------------------
@@ -286,7 +273,7 @@ echo "Creating GitHub Release ${TAG} ..."
 gh release create "${TAG}" \
   --verify-tag \
   --title "${TAG}" \
-  --notes-file "${BODY_FILE}" \
+  "${RELEASE_NOTES_ARGS[@]}" \
   ${LATEST_FLAG}
 
 echo ""

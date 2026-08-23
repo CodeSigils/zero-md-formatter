@@ -44,10 +44,9 @@ use `pnpm add -g zero-md-formatter@latest` to advance it explicitly.
 
 ### Node.js support policy
 
-The package supports the current Node.js 24+ line. CI tests the version declared
-in [`.node-version`](.node-version); newer Node.js majors are supported after
-the CI matrix and compatibility checks pass. Node.js versions below 24 are
-not supported.
+The package supports Node.js 24 and newer. CI validates Node.js 24.x and the
+current Node.js 25.x line; Node.js versions below 24 are not supported. The
+[`.node-version`](.node-version) file remains the local development baseline.
 
 ### Use via npx (no install)
 
@@ -453,11 +452,21 @@ node scripts/verify-urls.mjs --update
 
 Do not use `--update` without a successful live verification.
 
+For local relative Markdown links, run:
+
+```bash
+npm run check:links
+```
+
+This offline check validates links such as `[regression guide](docs/codex-regression.md)`; external
+URLs remain covered by `verify:urls`.
+
 ### Release process
 
 The npm and GitHub Release badges above show the current published version.
 Every release tag and npm package is published from the same CI-verified
-tarball. GitHub Releases are the canonical source for release notes; use the
+tarball. GitHub Releases are the canonical source for automatically generated
+release notes; use the
 [latest release](https://github.com/CodeSigils/zero-md-formatter/releases/latest)
 or the [full release history](https://github.com/CodeSigils/zero-md-formatter/releases).
 Publishing currently uses a protected npm token with provenance. The planned
