@@ -50,6 +50,7 @@ for (const file of RUNTIME_PAYLOAD_FILES) {
 
 const HISTORICAL_LINT_ARTIFACTS = new Set([
   "AGENTS.md",
+  "CHANGELOG.md",
   ".oxfmtrc.json",
   "lint.js",
   "mdformat.js",
