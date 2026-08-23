@@ -50,7 +50,7 @@ it('keeps CI and release safety guarantees documented and wired', () => {
   assert.match(workflow, /npm test/);
   assert.match(workflow, /actions\/upload-artifact@/);
   assert.match(workflow, /actions\/download-artifact@/);
-  assert.match(workflow, /npm publish artifacts\/\*\.tgz/);
+  assert.match(workflow, /npm publish \.\/artifacts\/\*\.tgz/);
   assert.match(release, /DRY_RUN=1/);
   assert.match(release, /Uncommitted changes.*before running release\.sh/);
   assert.doesNotMatch(release, /git commit -m "sync skill metadata/);
