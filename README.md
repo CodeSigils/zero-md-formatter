@@ -460,6 +460,9 @@ Every release tag and npm package is published from the same CI-verified
 tarball. GitHub Releases are the canonical source for release notes; use the
 [latest release](https://github.com/CodeSigils/zero-md-formatter/releases/latest)
 or the [full release history](https://github.com/CodeSigils/zero-md-formatter/releases).
+Publishing currently uses a protected npm token with provenance. The planned
+OIDC migration requires configuring the npm trusted publisher for `ci.yml`
+before removing that token.
 
 Runtime changes must be merged before the isolated version-bump commit.
 `release.sh` requires a clean tree, synchronized skill metadata, a stable

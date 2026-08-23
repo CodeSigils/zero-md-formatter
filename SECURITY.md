@@ -30,7 +30,7 @@ Do not file public issues for security vulnerabilities.
   capability in January 2027.
 - **Provenance** — CI publishes with npm provenance enabled and GitHub Actions
   OIDC permission. The workflow currently authenticates with the protected
-  `NPM_TOKEN`; migrate to npm trusted publishing (OIDC) before token-based
-  publishing loses support.
+  `NPM_TOKEN`; migrate to npm trusted publishing (OIDC) once the npm account
+  trust relationship is configured.
 - **Minimal runtime** — pure Node.js >=24, no native bindings
 - **No install lifecycle scripts** — git hooks are installed explicitly with `npm run install-hooks`
