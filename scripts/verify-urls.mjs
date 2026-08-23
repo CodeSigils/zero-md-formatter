@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
+// --update rewrites last_verified for every successfully checked URL.
+const update = process.argv.includes("--update");
 const manifestPath = resolve("docs/evidence-urls.json");
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 if (manifest.version !== 3 || !Array.isArray(manifest.urls)) {
@@ -29,5 +31,21 @@ if (failures.length > 0) {
   console.error(failures.join("\n"));
   process.exitCode = 1;
 } else {
+  if (update) {
+    const today = new Date().toISOString().slice(0, 10);
+    let changed = false;
+    for (const entry of manifest.urls) {
+      if (entry.last_verified !== today) {
+        entry.last_verified = today;
+        changed = true;
+      }
+    }
+    if (changed) {
+      await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
+      console.log(`updated last_verified to ${today}`);
+    } else {
+      console.log(`last_verified already current (${today})`);
+    }
+  }
   console.log(`verified ${manifest.urls.length} evidence URLs`);
 }
