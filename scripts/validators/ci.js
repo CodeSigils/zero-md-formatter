@@ -37,7 +37,7 @@ function validateCi(files) {
     { pattern: /staged-install-verify\.sh/i, label: "verifies staged runtime payload" },
     { pattern: /actions\/upload-artifact@/i, label: "uploads the tested npm package" },
     { pattern: /actions\/download-artifact@/i, label: "publishes the tested npm package artifact" },
-    { pattern: /npm\s+publish\s+artifacts\/\*\.tgz/i, label: "publishes the tested npm tarball" },
+    { pattern: /npm\s+publish\s+(?:\.\/)?artifacts\/\*\.tgz/i, label: "publishes the tested npm tarball" },
     { pattern: /npm\s+ci/i, label: "installs repository dependencies" },
     { pattern: /CHECK_BASE_REF/i, label: "sets CHECK_BASE_REF for release-drift checks" },
     { pattern: /fetch-depth:\s*0/i, label: "uses full git depth for diff history in precheck" },
