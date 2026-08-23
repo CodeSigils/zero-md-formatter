@@ -437,6 +437,9 @@ Do not use `--update` without a successful live verification.
 
 ### Release process
 
+The current package release is `1.5.1`; the repository tag and npm package are
+published from the same CI-verified tarball.
+
 Runtime changes must be merged before the isolated version-bump commit.
 `release.sh` requires a clean tree, synchronized skill metadata, a stable
 `x.y.z` version, an isolated version commit, a pushed `main`, and successful
