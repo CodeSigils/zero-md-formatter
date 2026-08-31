@@ -1,6 +1,6 @@
 const { it } = require('node:test');
 const assert = require('node:assert/strict');
-const { readFileSync } = require('node:fs');
+const { readdirSync, readFileSync } = require('node:fs');
 
 it('uses preflight wording in user-facing docs', () => {
   for (const file of ['README.md', 'SKILL.md']) {
@@ -53,13 +53,35 @@ it('keeps CI and release safety guarantees documented and wired', () => {
   assert.match(workflow, /actions\/download-artifact@/);
   assert.match(workflow, /npm publish \.\/artifacts\/\*\.tgz/);
   assert.match(workflow, /matrix:/);
-  assert.match(workflow, /upload-artifact@043fb46d/);
-  assert.match(workflow, /download-artifact@3e5f45b2/);
   assert.match(release, /DRY_RUN=1/);
   assert.match(release, /--generate-notes/);
   assert.match(releaseNotes, /categories:/);
   assert.match(release, /Uncommitted changes.*before running release\.sh/);
   assert.doesNotMatch(release, /git commit -m "sync skill metadata/);
+});
+
+it('pins every GitHub Action to a full immutable commit SHA', () => {
+  // Supply-chain invariant: assert the property (full 40-char SHA, no @v6/@main
+  // mutable refs) not a specific value, so dependabot bumps keep CI green.
+  const files = readdirSync('.github/workflows').filter((f) => f.endsWith('.yml'));
+  const refs = [];
+  for (const file of files) {
+    const workflow = readFileSync(`.github/workflows/${file}`, 'utf8');
+    refs.push(
+      ...[...workflow.matchAll(/(?:uses|with:\s*using):\s+([^\s#@]+)@([^\s#]+)/g)].map(
+        (m) => [file, m[1], m[2]],
+      ),
+    );
+  }
+  assert.ok(refs.length > 0, 'workflows should reference at least one GitHub Action');
+
+  for (const [file, name, ref] of refs) {
+    assert.match(
+      ref,
+      /^[0-9a-f]{40}$/,
+      `${file}: ${name} must be pinned to a full 40-character immutable commit SHA, got ${JSON.stringify(ref)}`,
+    );
+  }
 });
 
 it('documents and configures dependency freshness checks', () => {
