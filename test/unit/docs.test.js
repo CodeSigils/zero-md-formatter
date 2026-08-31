@@ -53,8 +53,8 @@ it('keeps CI and release safety guarantees documented and wired', () => {
   assert.match(workflow, /actions\/download-artifact@/);
   assert.match(workflow, /npm publish \.\/artifacts\/\*\.tgz/);
   assert.match(workflow, /matrix:/);
-  assert.match(workflow, /upload-artifact@b7c566a/);
-  assert.match(workflow, /download-artifact@37930b1/);
+  assert.match(workflow, /upload-artifact@043fb46d/);
+  assert.match(workflow, /download-artifact@3e5f45b2/);
   assert.match(release, /DRY_RUN=1/);
   assert.match(release, /--generate-notes/);
   assert.match(releaseNotes, /categories:/);
