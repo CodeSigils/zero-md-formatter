@@ -59,8 +59,8 @@ function validateCi(files) {
   if (!/needs:\s*\[\s*test\s*,\s*lint\s*\]/i.test(ci)) {
     warnings.push("ci.yml: publish should require both test and lint jobs");
   }
-  if (!/node-version:\s*\['22\.x',\s*'24\.x'\]/i.test(ci)) {
-    warnings.push("ci.yml: test matrix should cover supported Node 22.x and 24.x runtimes");
+  if (!/node-version:\s*\['24\.x',\s*'26\.x'\]/i.test(ci)) {
+    warnings.push("ci.yml: test matrix should cover the declared Node >=24 floor and current 26.x runtime");
   }
 
   // .node-version alignment

@@ -61,7 +61,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: ['22.x', '24.x']
+        node-version: ['24.x', '26.x']
     env:
       CHECK_BASE_REF: origin/main
       GH_TOKEN: ${{ github.token }}
