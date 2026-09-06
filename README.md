@@ -447,11 +447,12 @@ runtime or formatting behavior changes.
 ### CI and pull requests
 
 Every pull request must pass the deterministic `lint` gate and both runtime
-matrix jobs (`test (24.x)` and `test (25.x)`). The lint gate runs formatting,
+matrix jobs (`test (22.x)` and `test (24.x)`). The lint gate runs formatting,
 payload synchronization, dependency audit, offline link checks, and builds the
-single npm tarball used by publishing; the runtime jobs focus on the test suite
-across supported Node versions. Publishing is allowed only after all three
-gates succeed.
+single npm tarball used by publishing. It also installs that tarball into a
+clean temporary prefix and exercises the packaged `mdfmt` binary; the runtime
+jobs focus on the test suite across supported Node versions. Publishing is
+allowed only after all three gates succeed.
 
 Live HTTP checks are intentionally not required for pull requests. The
 `external-contracts` job runs weekly and on demand from the Actions tab, so an
