@@ -444,12 +444,25 @@ compatible minor/patch npm updates and action updates into focused pull
 requests; CI remains the merge gate. Review major npm updates separately for
 runtime or formatting behavior changes.
 
+### CI and pull requests
+
+Every pull request must pass the deterministic `lint` gate and both runtime
+matrix jobs (`test (24.x)` and `test (25.x)`). The lint gate runs formatting,
+payload synchronization, dependency audit, offline link checks, and builds the
+single npm tarball used by publishing; the runtime jobs focus on the test suite
+across supported Node versions. Publishing is allowed only after all three
+gates succeed.
+
+Live HTTP checks are intentionally not required for pull requests. The
+`external-contracts` job runs weekly and on demand from the Actions tab, so an
+upstream outage does not make an otherwise deterministic change unmergeable.
+
 ### Evidence URLs
 
 [`docs/evidence-urls.json`](docs/evidence-urls.json) records the external
 references used by the README and skill. Unit tests enforce that every
-`last_verified` value is no more than 30 days old; CI also performs live HTTP
-verification.
+`last_verified` value is no more than 30 days old. The scheduled/manual
+`external-contracts` job performs live HTTP verification.
 
 After checking the links live, refresh the timestamps with:
 
@@ -483,8 +496,8 @@ before removing that token.
 Runtime changes must be merged before the isolated version-bump commit.
 `release.sh` requires a clean tree, synchronized skill metadata, a stable
 `x.y.z` version, an isolated version commit, a pushed `main`, and successful
-CI. It creates the tag and GitHub Release; the tag workflow publishes the exact
-npm tarball tested by CI.
+CI. It creates the tag and GitHub Release; the `publish` job publishes the exact
+npm tarball built and tested by CI.
 
 ```bash
 npm version patch --no-git-tag-version   # or minor/major
