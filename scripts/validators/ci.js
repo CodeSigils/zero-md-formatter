@@ -32,6 +32,8 @@ function validateCi(files) {
 
   // Required patterns that must appear
   const required = [
+    { pattern: /\n\s+lint:\s*\n/i, label: "runs a deterministic lint/package gate" },
+    { pattern: /\n\s+external-contracts:\s*\n/i, label: "isolates live external URL checks" },
     { pattern: /npm\s+test\b/i, label: "runs the canonical npm test suite" },
     { pattern: /npm\s+run\s+format:check/i, label: "checks maintainer docs formatting" },
     { pattern: /staged-install-verify\.sh/i, label: "verifies staged runtime payload" },
@@ -46,6 +48,15 @@ function validateCi(files) {
     if (!pattern.test(ci)) {
       warnings.push(`ci.yml: missing ${label}`);
     }
+  }
+
+  // Keep network-dependent evidence checks out of the required runtime matrix.
+  const testJob = ci.match(/\n\s+test:\s*\n([\s\S]*?)(?=\n\s+[a-z][\w-]*:\s*\n|\s*$)/i);
+  if (testJob && /verify:urls/i.test(testJob[1])) {
+    errors.push("ci.yml: live evidence URL checks must run only in external-contracts");
+  }
+  if (!/needs:\s*\[\s*test\s*,\s*lint\s*\]/i.test(ci)) {
+    warnings.push("ci.yml: publish should require both test and lint jobs");
   }
 
   // .node-version alignment

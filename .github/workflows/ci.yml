@@ -6,6 +6,9 @@ on:
     tags: ['v*']
   pull_request:
     branches: [main]
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -15,6 +18,37 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CHECK_BASE_REF: origin/main
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: .node-version
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run format:check
+      - run: bash -n scripts/check-markdown.sh
+      - run: bash scripts/staged-install-verify.sh
+      - run: git diff --exit-code -- skills/markdown-formatter
+      - run: npm audit --audit-level=high
+      - run: npm run check:links
+      - name: Build tested npm package
+        run: mkdir -p artifacts && npm pack --pack-destination artifacts
+      - name: Upload tested npm package
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: npm-package
+          path: artifacts/*.tgz
+          if-no-files-found: error
+
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -36,25 +70,24 @@ jobs:
           cache-dependency-path: package-lock.json
       - run: npm ci
       - run: npm test
-      - run: npm run format:check
-      - if: matrix.node-version == '24.x'
-        run: mkdir -p artifacts && npm pack --pack-destination artifacts
-      - run: bash -n scripts/check-markdown.sh
-      - run: bash scripts/staged-install-verify.sh
-      - run: git diff --exit-code -- skills/markdown-formatter
-      - run: npm audit --audit-level=high
-      - run: npm run verify:urls
-      - run: npm run check:links
-      - name: Upload tested npm package
-        if: matrix.node-version == '24.x'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+
+  external-contracts:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
-          name: npm-package
-          path: artifacts/*.tgz
-          if-no-files-found: error
+          node-version-file: .node-version
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Verify evidence URLs
+        run: npm run verify:urls
 
   publish:
-    needs: test
+    needs: [test, lint]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 5
