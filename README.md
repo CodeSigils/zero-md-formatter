@@ -44,8 +44,9 @@ use `pnpm add -g zero-md-formatter@latest` to advance it explicitly.
 
 ### Node.js support policy
 
-The package supports Node.js 24 and newer. CI validates Node.js 24.x and the
-current Node.js 25.x line; Node.js versions below 24 are not supported. The
+The package supports Node.js 24 and newer. CI validates the Node.js 24.x
+support floor and the current Node.js 26.x line; Node.js versions below 24 are
+not supported. The
 [`.node-version`](.node-version) file remains the local development baseline.
 
 ### Use via npx (no install)
