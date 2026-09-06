@@ -42,6 +42,12 @@ jobs:
       - run: npm run check:links
       - name: Build tested npm package
         run: mkdir -p artifacts && npm pack --pack-destination artifacts
+      - name: Smoke-test the packed npm package
+        run: |
+          package_dir="$(mktemp -d)"
+          npm install --prefix "$package_dir" --no-save "./artifacts/"*.tgz
+          "$package_dir/node_modules/.bin/mdfmt" --version
+          "$package_dir/node_modules/.bin/mdfmt" --check README.md
       - name: Upload tested npm package
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
@@ -55,7 +61,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: ['24.x', '25.x']
+        node-version: ['24.x', '26.x']
     env:
       CHECK_BASE_REF: origin/main
       GH_TOKEN: ${{ github.token }}

@@ -40,6 +40,7 @@ function validateCi(files) {
     { pattern: /actions\/upload-artifact@/i, label: "uploads the tested npm package" },
     { pattern: /actions\/download-artifact@/i, label: "publishes the tested npm package artifact" },
     { pattern: /npm\s+publish\s+(?:\.\/)?artifacts\/\*\.tgz/i, label: "publishes the tested npm tarball" },
+    { pattern: /Smoke-test the packed npm package/i, label: "smoke-tests the packed npm package" },
     { pattern: /npm\s+ci/i, label: "installs repository dependencies" },
     { pattern: /CHECK_BASE_REF/i, label: "sets CHECK_BASE_REF for release-drift checks" },
     { pattern: /fetch-depth:\s*0/i, label: "uses full git depth for diff history in precheck" },
@@ -57,6 +58,9 @@ function validateCi(files) {
   }
   if (!/needs:\s*\[\s*test\s*,\s*lint\s*\]/i.test(ci)) {
     warnings.push("ci.yml: publish should require both test and lint jobs");
+  }
+  if (!/node-version:\s*\['24\.x',\s*'26\.x'\]/i.test(ci)) {
+    warnings.push("ci.yml: test matrix should cover the declared Node >=24 floor and current 26.x runtime");
   }
 
   // .node-version alignment
