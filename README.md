@@ -1,5 +1,6 @@
 # zero-md-formatter
 
+[![skills.sh](https://skills.sh/b/codesigils/zero-md-formatter)](https://skills.sh/codesigils/zero-md-formatter/markdown-formatter)
 [![GitHub Release](https://img.shields.io/github/v/release/CodeSigils/zero-md-formatter?display_name=tag&sort=semver)](https://github.com/CodeSigils/zero-md-formatter/releases/latest)
 [![npm version](https://img.shields.io/npm/v/zero-md-formatter)](https://www.npmjs.com/package/zero-md-formatter)
 [![npm downloads](https://img.shields.io/npm/dw/zero-md-formatter)](https://www.npmjs.com/package/zero-md-formatter)
