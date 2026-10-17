@@ -2,7 +2,7 @@
 name: markdown-formatter
 description: "Zero-dependency GFM and MDX formatter with table, pipe, and fence guards for AI-agent-authored Markdown"
 license: MIT
-version: 1.5.1
+version: 1.5.2
 ---
 
 ## Scope
