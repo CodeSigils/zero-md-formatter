@@ -12,7 +12,7 @@
       "domain_tag": "markdown",
       "source_type": "specification",
       "status": "active",
-      "last_verified": "2026-08-23"
+      "last_verified": "2026-10-17"
     },
     {
       "name": "zero-md-formatter repository",
@@ -24,7 +24,7 @@
       "domain_tag": "repository",
       "source_type": "pinned_snapshot",
       "status": "active",
-      "last_verified": "2026-08-23"
+      "last_verified": "2026-10-17"
     },
     {
       "name": "npm package",
@@ -37,7 +37,7 @@
       "domain_tag": "distribution",
       "source_type": "official_docs",
       "status": "active",
-      "last_verified": "2026-08-23",
+      "last_verified": "2026-10-17",
       "notes": "npm may return 403 to automated requests while the package remains public"
     }
   ]
