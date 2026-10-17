@@ -25,12 +25,12 @@ Do not file public issues for security vulnerabilities.
 
 - **Zero dependencies** — eliminates supply-chain attack surface
 - **Signed commits** — all commits SSH-signed; branch protection enforces this
-- **2FA on npm** — publishing requires OTP or a protected granular token. Note:
-  bypass-2fa granular tokens are deprecated and will lose direct publish
-  capability in January 2027.
-- **Provenance** — CI publishes with npm provenance enabled and GitHub Actions
-  OIDC permission. The workflow currently authenticates with the protected
-  `NPM_TOKEN`; migrate to npm trusted publishing (OIDC) once the npm account
-  trust relationship is configured.
+- **2FA on npm** — publishing uses npm trusted publishing (OIDC) from GitHub
+  Actions; no long-lived npm token is stored. This supersedes granular tokens,
+  including bypass-2fa tokens, which lose direct publish capability in January
+  2027.
+- **Provenance** — CI publishes with npm provenance enabled over GitHub Actions
+  OIDC (`id-token: write`), authenticated by the `ci.yml` trusted publisher
+  configured on the npm package. No `NPM_TOKEN` secret is used.
 - **Minimal runtime** — pure Node.js >=24, no native bindings
 - **No install lifecycle scripts** — git hooks are installed explicitly with `npm run install-hooks`

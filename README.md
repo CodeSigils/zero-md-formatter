@@ -492,9 +492,10 @@ tarball. GitHub Releases are the canonical source for automatically generated
 release notes; use the
 [latest release](https://github.com/CodeSigils/zero-md-formatter/releases/latest)
 or the [full release history](https://github.com/CodeSigils/zero-md-formatter/releases).
-Publishing currently uses a protected npm token with provenance. The planned
-OIDC migration requires configuring the npm trusted publisher for `ci.yml`
-before removing that token.
+Publishing uses npm trusted publishing (OIDC) with provenance; no long-lived
+npm token is stored. The npm package must have a trusted publisher configured
+for `ci.yml` in this repository before the tag-triggered publish job will
+succeed.
 
 Runtime changes must be merged before the isolated version-bump commit.
 `release.sh` requires a clean tree, synchronized skill metadata, a stable
